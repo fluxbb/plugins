@@ -23,24 +23,60 @@ define('PUN_PLUGIN_LOADED', 1);
 // Increase time limit... incase its a big file or something.
 @set_time_limit(0);
 
-function dump_data($fh, $table)
+function dump_header($handle, $table)
 {
-	$result = $db->query('SELECT * FROM `'.$table.'`') or error('Unable to fetch table data', __FILE__, __LINE__, $db->error());
+	global $lang_admin_plugin_backup;
+
+	fwrite($handle, "\n");
+	fwrite($handle, '--'."\n");
+	fwrite($handle, '-- '.sprintf($lang_admin_plugin_backup['Table structure for'], escape_keyword($table))."\n");
+	fwrite($handle, '--'."\n");
+
+	fwrite($handle, 'DROP TABLE IF EXISTS '.escape_keyword($table).';'."\n");
+}
+
+function dump_data($handle, $table)
+{
+	global $db_type, $db, $lang_admin_plugin_backup;
+
+	$result = $db->query('SELECT * FROM '.escape_keyword($table)) or error('Unable to fetch table data', __FILE__, __LINE__, $db->error());
 	if ($db->num_rows($result))
 	{
-		fwrite($fh, '-- '."\n");
-		fwrite($fh, '-- Table data for '.$table."\n"); // lang
-		fwrite($fh, '-- '."\n");
+		fwrite($handle, "\n");
+		fwrite($handle, '-- '."\n");
+		fwrite($handle, '-- '.sprintf($lang_admin_plugin_backup['Table data for'], escape_keyword($table))."\n");
+		fwrite($handle, '-- '."\n");
 
-		while($cur_row = $db->fetch_row($_result))
+		while($cur_row = $db->fetch_row($result))
 		{
 			$cur_row = array_map(array($db, 'escape'), $cur_row);
 
-			fwrite($fh, 'INSERT INTO `'.$table.'` VALUES (\''.implode('\', \'', $cur_row).'\');'."\n");
+			fwrite($handle, 'INSERT INTO '.escape_keyword($table).' VALUES (\''.implode('\', \'', $cur_row).'\');'."\n");
 		}
 
-		fwrite($fh, "\n");
+		fwrite($handle, "\n");
 	}
+}
+
+function escape_keyword($str)
+{
+	global $db_type;
+
+	switch ($db_type)
+	{
+		case 'sqlite':
+			return $str;
+		case 'pgsql':
+			return $str; // TODO
+		case 'mysql':
+		case 'mysql_innodb':
+		case 'mysqli':
+		case 'mysqli_innodb':
+			return '`'.$str.'`';
+		default:
+			return $str;
+	}
+
 }
 
 if (isset($_POST['make_backup']))
@@ -50,15 +86,15 @@ if (isset($_POST['make_backup']))
 		message($lang_common['Bad request']);
 
 	$now = time();
-	$filename = $db_name.'_'.$now.'.sql';
+	$filename = $db_type.'_'.$now.'.sql';
 
-	$fh = @fopen(FORUM_CACHE_DIR.$filename, 'wb');
-	if (!$fh)
+	$handle = @fopen(FORUM_CACHE_DIR.$filename, 'wb');
+	if (!$handle)
 		error('Unable to write to cache directory. Please make sure PHP has write access to the directory \'cache\'', __FILE__, __LINE__);
 
 	// Start of making the dump
 
-	fwrite($fh, sprintf($lang_admin_plugin_backup['Header line'], format_time($now), $db_name, $db_type)."\n");
+	fwrite($handle, sprintf($lang_admin_plugin_backup['Header line'], format_time($now, false, null, null, false, true), $db_name, $db_type));
 
 	switch($db_type)
 	{
@@ -66,55 +102,54 @@ if (isset($_POST['make_backup']))
 		case 'mysql_innodb':
 		case 'mysqli':
 		case 'mysqli_innodb':
-			$result = $db->query('SHOW TABLES LIKE \''.$db->prefix.'\'') or error('Unable to fetch table list', __FILE__, __LINE__, $db->error());
+			$result = $db->query('SHOW TABLES LIKE \''.$db->prefix.'%\'') or error('Unable to fetch table list', __FILE__, __LINE__, $db->error());
 			while ($cur_table = $db->fetch_row($result))
 			{
-				fwrite($fh, '--'."\n");
-				fwrite($fh, '-- Table structure for '.$table[0]."\n"); // lang
-				fwrite($fh, '--'."\n");
+				// Write a header
+				dump_header($handle, $cur_table[0]);
 
-				fwrite($fh, 'DROP TABLE IF EXISTS `'.$table[0].'`;'."\n");
-
-				$_result = $db->query('SHOW CREATE TABLE `'.$table[0].'`') or error('Unable to fetch table structure', __FILE__, __LINE__, $db->error());
+				// Dump the table structure
+				$_result = $db->query('SHOW CREATE TABLE '.escape_keyword($cur_table[0])) or error('Unable to fetch table structure', __FILE__, __LINE__, $db->error());
 				while ($cur_row = $db->fetch_row($_result))
 				{
 					unset ($cur_row[0]);
-					fwrite($fh, implode("\n", $cur_row));
+					fwrite($handle, implode("\n", $cur_row)."\n");
 				}
 
-				fwrite($fh, "\n");
-
 				// Dump the table data
-				dump_data($fh, $table[0]);
+				dump_data($handle, $cur_table[0]);
 			}
 
 			break;
 
 		case 'sqlite':
-			$result = $db->query('SELECT * FROM sqlite_master WHERE type=\'table\'') or error('Unable to fetch table list', __FILE__, __LINE__, $db->error()); // TODO Only prefix tables
+			$result = $db->query('SELECT name, sql FROM sqlite_master WHERE type=\'table\' AND name LIKE \''.$db->prefix.'%\'') or error('Unable to fetch table list', __FILE__, __LINE__, $db->error());
 			while ($cur_table = $db->fetch_row($result))
 			{
-				fwrite($fh, '--'."\n");
-				fwrite($fh, '-- Table structure for '.$table[0]."\n"); // lang
-				fwrite($fh, '--'."\n");
+				// Write a header
+				dump_header($handle, $cur_table[0]);
 
-				fwrite($fh, 'DROP TABLE IF EXISTS `'.$table[1].'`;'."\n");
-
-				fwrite($fh, str_replace("\t", '', $table[4]));
-
-				fwrite($fh, "\n");
+				// Dump the table structure
+				fwrite($handle, str_replace("\t", ' ', $cur_table[1])."\n");
 
 				// Dump the table data
-				dump_data($fh, $table[1]);
+				dump_data($handle, $cur_table[0]);
 			}
 
 			break;
 
 		case 'pgsql':
-			$result = $db->query('SELECT tablename FROM pg_tables WHERE tableowner = current_user') or error('Unable to fetch table list', __FILE__, __LINE__, $db->error()); // TODO Only prefix tables
+			$result = $db->query('SELECT tablename FROM pg_tables WHERE tableowner = current_user AND tablename LIKE \''.$db->prefix.'%\'') or error('Unable to fetch table list', __FILE__, __LINE__, $db->error());
 			while ($cur_table = $db->fetch_row($result))
 			{
-				
+				// Write a header
+				dump_header($handle, $cur_table[0]);
+
+				// Dump the table structure
+				// TODO
+
+				// Dump the table data
+				dump_data($handle, $cur_table[0]);
 			}
 
 			break;
@@ -125,27 +160,42 @@ if (isset($_POST['make_backup']))
 
 	// End of Making the dump
 
-	fclose($fh);
+	fclose($handle);
 
 	switch ($_POST['method'])
 	{
-		case 'download':
-/*
-		header('Content-type: text/x-sql');
-		header('Content-disposition: attachment; filename="'.$filename.'"');
-		echo $dump;
-*/
-			break;
+		case 'download': // TODO: Gzip?
+			header('Content-type: text/x-sql');
+			header('Content-disposition: attachment; filename="'.$filename.'"');
+			header('Content-length: '.filesize(FORUM_CACHE_DIR.$filename));
+
+			readfile(FORUM_CACHE_DIR.$filename);
+			@unlink(FORUM_CACHE_DIR.$filename);
+
+			exit;
 
 		case 'filesystem':
 			$dir = isset($_POST['dir']) ? trim($_POST['dir']) : false;
 			if (!$dir)
-				message('You didn\'t specify a directory to save to.');
+				message($lang_admin_plugin_backup['No directory']);
 
 			if (!is_dir($dir) || !is_writable($dir) || !rename(FORUM_CACHE_DIR.$filename, $dir.'/'.$filename))
-				message('Unable to write to the specified directory, please make sure it exists and is writable by PHP.');
+				message($lang_admin_plugin_backup['Unable to write']);
 
-			message('A backup has successfully been written to the local filesystem!'); // lang
+			generate_admin_menu($plugin);
+
+?>
+	<div class="block">
+		<h2><span><?php echo $lang_admin_plugin_backup['Backup Successful'] ?></span></h2>
+		<div class="box">
+			<div class="inbox">
+				<p><?php printf($lang_admin_plugin_backup['Backup written'], pun_htmlspecialchars($dir.'/'.$filename)); ?></p>
+				<p><a href="javascript: history.go(-1)"><?php echo $lang_admin_common['Go back'] ?></a></p>
+			</div>
+		</div>
+	</div>
+<?php
+
 			break;
 
 		case 'ftp':
@@ -181,7 +231,8 @@ if (isset($_POST['make_backup']))
 */
 			break;
 
-		default:
+		default: // This shouldn't happen
+			@unlink(FORUM_CACHE_DIR.$filename);
 			message($lang_common['Bad request']);
 	}
 }
