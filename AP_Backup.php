@@ -198,37 +198,53 @@ if (isset($_POST['make_backup']))
 
 			break;
 
-		case 'ftp':
-/*
-		if (!isset($_POST['host'], $_POST['user'], $_POST['password']))
-			message('You forgot to define either a host, username or password.');
+		case 'ftp': // TODO: sftp?
+			$hostname = isset($_POST['host']) ? trim($_POST['host']) : '';
+			$username = isset($_POST['user']) ? trim($_POST['user']) : '';
+			$password1 = isset($_POST['password1']) ? trim($_POST['password1']) : '';
+			$password2 = isset($_POST['password2']) ? trim($_POST['password2']) : '';
 
-		if (isset($_POST['ssl']) && $_POST['ssl'] == 1 && function_exists('ftp_ssl_connect'))
-			$connect_type = 'ftp_ssl_connect';
-		else
-			$connect_type = 'ftp_connect';
+			if (empty($hostname))
+				message($lang_admin_plugin_backup['No hostname error']);
 
-		if (!$conn = $connect_type($_POST['host']))
-			message('I was unable to connect to the host specified.');
+			if (empty($username))
+				message($lang_admin_plugin_backup['No username error']);
 
-		if (!ftp_login($conn, $_POST['user'], $_POST['password']))
-			message('I was unable to login with the username and password specified');
+			if ($password1 != $password2))
+				message($lang_admin_plugin_backup['Password mismatch error']);
 
-		//Gotta create a temporary file to upload this...
-		$tmp = tempnam('','');
-		$handle = fopen($tmp, 'w+');
-		fwrite($handle, $dump);
-		fclose($handle);
+			if (isset($_POST['ssl']) && $_POST['ssl'] == '1')
+				$conn = @ftp_ssl_connect($hostname);
+			else
+				$conn = @ftp_connect($hostname);
 
-		if(!ftp_put($conn, $filename, $tmp, FTP_ASCII))
-			message('I was unable to upload the file, perhaps you\'re out of space or do not have adaquete permissions?');
+			if (!$conn)
+				message(sprintf($lang_admin_plugin_backup['Unable to connect'], pun_htmlspecialchars($hostname)));
 
-		//Bit of cleanup
-		unlink($tmp);
-		ftp_close($conn);
+			if (!ftp_login($conn, $username, $password1))
+				message($lang_admin_plugin_backup['Unable to login']);
 
-		message('A backup has successfully been uploaded to "'.pun_htmlspecialchars($_POST['host']).'".');
-*/
+			if (!ftp_put($conn, FORUM_CACHE_DIR.$filename, $filename, FTP_ASCII))
+				message($lang_admin_plugin_backup['Unable to put']);
+
+			// Bit of cleanup
+			@unlink(FORUM_CACHE_DIR.$filename);
+			@ftp_close($conn);
+
+			generate_admin_menu($plugin);
+
+?>
+	<div class="block">
+		<h2><span><?php echo $lang_admin_plugin_backup['Backup Successful'] ?></span></h2>
+		<div class="box">
+			<div class="inbox">
+				<p><?php printf($lang_admin_plugin_backup['Backup uploaded'], pun_htmlspecialchars($hostname)); ?></p>
+				<p><a href="javascript: history.go(-1)"><?php echo $lang_admin_common['Go back'] ?></a></p>
+			</div>
+		</div>
+	</div>
+<?php
+
 			break;
 
 		default: // This shouldn't happen
@@ -242,51 +258,53 @@ else
 
 ?>
 	<div id="exampleplugin" class="blockform">
-		<h2><span>FluxBB Backup</span></h2>
+		<h2><span><?php echo $lang_admin_plugin_backup['FluxBB Backup'] ?></span></h2>
 		<div class="box">
 			<div class="inbox">
-				<p>This plugin allows you to quickly and easily make backups of your database data locally, to your computer or to an external FTP server.</p>
-				<p>Making regular backups is very important, as it allows you to quickly and easily restore your site to its former self if you make a mistake or get hacked. Its recommended you make backups every 24 hours and before you make any major changes to the site (installing the latest FluxBB version, installing a mod, etc).</p>
+				<p><?php echo $lang_admin_plugin_backup['Info 1'] ?></p>
+				<p><?php echo $lang_admin_plugin_backup['Info 2'] ?></p>
 			</div>
 		</div>
 
-		<h2 class="block2"><span>Backup Database</span></h2>
+		<h2 class="block2"><span><?php echo $lang_admin_plugin_backup['Backup Database'] ?></span></h2>
 		<div class="box">
 			<form id="backup" method="post" action="<?php echo pun_htmlspecialchars($_SERVER['REQUEST_URI']) ?>">
 				<div class="inform">
 					<fieldset>
-						<legend>Choose backup method</legend>
+						<legend><?php echo $lang_admin_plugin_backup['Choose backup method'] ?></legend>
 						<div class="infldset">
-						<table class="aligntop" cellspacing="0">
-							<tr>
-								<th scope="row">Download</th>
-								<td>
-									<span><input type="radio" name="method" value="download" checked="checked" />&nbsp;&nbsp;Download the database backup to your local harddrive.</span>
-								</td>
-							</tr>
-							<tr>
-								<th scope="row">Filesystem</th>
-								<td>
-									<span><input type="radio" name="method" value="filesystem" />&nbsp;&nbsp;Save it onto the servers filesystem.</span>
-									Directory: <input type="text" name="dir" size="25" value="<?php echo getcwd(); ?>" /> <span style="color: red; display:inline;">Write access must be avalaible to this directory</span>
-								</td>
-							</tr>
-							<tr>
-								<th scope="row">FTP</th>
-								<td>
-									<span><input type="radio" name="method" value="ftp" />&nbsp;&nbsp;Save this backup to an <acronym title="File Transfer Protocol">FTP</acronym> server.</span>
-									<span>Host: <input type="text" name="host" size="25" style="margin-left: 3em;" /></span>
-									<span>Username: <input type="text" name="user" size="25" /></span>
-									<span>Password:<input type="text" name="password" size="25" style="margin-left: .7em;" /></span>
-									<?php echo function_exists('ftp_ssl_connect') ? '<span><acronym title="Secure Socket Layer">SSL</acronym>? <input type="checkbox" name="ssl" value="1" style="margin-left: 3.2em;"/> <strong>Yes</strong></span>' : '' ?>
-								</td>
-							</tr>
-						</table>
-						<p class="topspace">Creating your backup may take a while, especially on large forums. Don't be suprised if it takes several minutes for the next page to appear.</p>
-						<div class="fsetsubmit"><input type="submit" name="make_backup" value="Create backup" tabindex="1" /></div>
+							<table class="aligntop" cellspacing="0">
+								<tr>
+									<th scope="row"><?php echo $lang_admin_plugin_backup['Download label'] ?></th>
+									<td>
+										<input type="radio" name="method" value="download" checked="checked" />&#160;<?php echo $lang_admin_plugin_backup['Download help'] ?>
+									</td>
+								</tr>
+								<tr>
+									<th scope="row"><?php echo $lang_admin_plugin_backup['Filesystem label'] ?></th>
+									<td>
+										<input type="radio" name="method" value="filesystem" />&#160;<?php echo $lang_admin_plugin_backup['Filesystem help'] ?>
+										<span><?php echo $lang_admin_plugin_backu['Directory label'] ?>&#160;<input type="text" name="dir" size="50" value="<?php echo pun_htmlspecialchars(getcwd()); ?>" /></span>
+										<span style="color:red"><?php echo $lang_admin_plugin_backup['Write access'] ?></span>
+									</td>
+								</tr>
+								<tr>
+									<th scope="row"><?php echo $lang_admin_plugin_backup['FTP label'] ?></th>
+									<td>
+										<input type="radio" name="method" value="ftp" />&#160;<?php echo $lang_admin_plugin_backup['FTP help'] ?>
+										<span><?php echo $lang_admin_plugin_backup['Host label'] ?>&#160;<input type="text" name="host" size="25" /></span>
+										<span><?php echo $lang_admin_plugin_backup['Username label'] ?>&#160;<input type="text" name="user" size="25" /></span>
+										<span><?php echo $lang_admin_plugin_backup['Password1 label'] ?>&#160;<input type="password" name="password1" size="25" /></span>
+										<span><?php echo $lang_admin_plugin_backup['Password2 label'] ?>&#160;<input type="password" name="password2" size="25" /></span>
+<?php if (function_exists('ftp_ssl_connect')): ?>										<span><?php echo $lang_admin_plugin_backup['Use SSL label'] ?>&#160;<input type="radio" name="ssl" value="1" />&#160;<strong><?php echo $lang_admin_common['Yes'] ?></strong>&#160;&#160;&#160;<input type="radio" name="ssl" value="0" checked="checked" />&#160;<strong><?php echo $lang_admin_common['No'] ?></strong></span>
+<?php endif; ?>									</td>
+								</tr>
+							</table>
 						</div>
 					</fieldset>
 				</div>
+				<p><?php echo $lang_admin_plugin_backup['Creating note'] ?></p>
+				<p class="submitend"><input type="submit" name="make_backup" value="<?php echo $lang_admin_plugin_backup['Create backup'] ?>" /></p>
 			</form>
 		</div>
 	</div>
