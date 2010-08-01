@@ -14,7 +14,7 @@ if (!defined('PUN'))
 
 // Tell admin_loader.php that this is indeed a plugin and that it is loaded
 define('PUN_PLUGIN_LOADED', 1);
-define('PLUGIN_VERSION',1.1);
+define('PLUGIN_VERSION', '1.1.1');
 
 // Load the viewforum.php language file
 require PUN_ROOT.'lang/'.$pun_user['language'].'/forum.php';
@@ -23,21 +23,30 @@ if (isset($_POST['post']))
 {
 	// Do Post
 	require PUN_ROOT.'include/search_idx.php';
+
 	if (empty($_POST['subject']) || empty($_POST['message']))
 		message('Missing Fields');
 	if (!isset($_POST['forums']))
 		message('No Forums Selected');
 
 	$now = time();
-	$i=0;
+	$i = 0;
 	$_POST['message'] = pun_linebreaks(pun_trim($_POST['message']));
 
 	while($i < count($_POST['forums']))
 	{
-		$db->query('INSERT INTO '.$db->prefix.'topics (poster, subject, posted, last_post, last_poster, forum_id, sticky, closed) VALUES(\''.$db->escape($pun_user['username']).'\', \''.$db->escape($_POST['subject']).'\', '.$now.', '.$now.', \''.$db->escape($pun_user['username']).'\', '.$_POST['forums'][$i].', '.$_POST['sticky'].', '.$_POST['close'].')') or error('Unable to create topic', __FILE__, __LINE__, $db->error());
+		$db->query('INSERT INTO '.$db->prefix.'topics (poster, subject, posted, last_post, last_poster, forum_id, sticky, closed)
+			VALUES(\''.$db->escape($pun_user['username']).'\', \''.$db->escape($_POST['subject']).'\', '.$now.', '.$now.',
+			       \''.$db->escape($pun_user['username']).'\', '.$_POST['forums'][$i].', '.$_POST['sticky'].', '.$_POST['close'].')')
+			or error('Unable to create topic', __FILE__, __LINE__, $db->error());
 		$new_tid = $db->insert_id();
-		$db->query('INSERT INTO '.$db->prefix.'posts (poster, poster_id, poster_ip, message, hide_smilies, posted, topic_id) VALUES(\''.$db->escape($pun_user['username']).'\', '.$pun_user['id'].', \''.get_remote_address().'\', \''.$db->escape($_POST['message']).'\', \'0\', '.$now.', '.$new_tid.')') or error('Unable to create post', __FILE__, __LINE__, $db->error());
+
+		$db->query('INSERT INTO '.$db->prefix.'posts (poster, poster_id, poster_ip, message, hide_smilies, posted, topic_id)
+			VALUES(\''.$db->escape($pun_user['username']).'\', '.$pun_user['id'].', \''.get_remote_address().'\',
+			       \''.$db->escape($_POST['message']).'\', \'0\', '.$now.', '.$new_tid.')')
+			or error('Unable to create post', __FILE__, __LINE__, $db->error());
 		$new_pid = $db->insert_id();
+
 		$db->query('UPDATE '.$db->prefix.'topics SET last_post_id='.$new_pid.' WHERE id='.$new_tid) or error('Unable to update topic', __FILE__, __LINE__, $db->error());
 
 		update_search_index('post', $new_pid, $_POST['message'], $_POST['subject']);
@@ -54,9 +63,13 @@ elseif (isset($_POST['update']))
 
 	$_POST['message'] = pun_linebreaks(pun_trim($_POST['message']));
 
-	$db->query('UPDATE '.$db->prefix.'topics SET subject=\''.$db->escape($_POST['subject']).'\' WHERE subject=\''.$db->escape($_POST['old_subject']).'\' AND posted='.$db->escape($_POST['old_posted'])) or error('Unable to update topic', __FILE__, __LINE__, $db->error());
+	$db->query('UPDATE '.$db->prefix.'topics SET subject=\''.$db->escape($_POST['subject']).'\'
+		WHERE subject=\''.$db->escape($_POST['old_subject']).'\' AND posted='.$db->escape($_POST['old_posted']))
+		or error('Unable to update topic', __FILE__, __LINE__, $db->error());
 
-	$result = $db->query('SELECT p.id FROM '.$db->prefix.'posts as p LEFT JOIN '.$db->prefix.'topics as t ON t.id=p.topic_id WHERE t.subject=\''.$db->escape($_POST['subject']).'\' AND t.posted='.$db->escape($_POST['old_posted'])) or error('Unable to get post ids', __FILE__, __LINE__, $db->error());
+	$result = $db->query('SELECT p.id FROM '.$db->prefix.'posts as p LEFT JOIN '.$db->prefix.'topics as t ON t.id=p.topic_id
+		WHERE t.subject=\''.$db->escape($_POST['subject']).'\' AND t.posted='.$db->escape($_POST['old_posted']))
+		or error('Unable to get post ids', __FILE__, __LINE__, $db->error());
 
 	while ($cur_post = $db->fetch_assoc($result))
 		$db->query('UPDATE '.$db->prefix.'posts SET message=\''.$db->escape($_POST['message']).'\' WHERE id='.$cur_post['id']) or error('Unable to update post', __FILE__, __LINE__, $db->error());
@@ -68,29 +81,36 @@ elseif (isset($_GET['action'])) //looks like we're doing something to a global t
 	switch ($_GET['action'])
 	{
 		case 'delete':
-			$db->query('DELETE FROM '.$db->prefix.'topics WHERE subject=\''.$db->escape($_GET['subject']).'\' AND posted=\''.$db->escape($_GET['posted']).'\'') or error('Unable to delete topic', __FILE__, __LINE__, $db->error());
+			$db->query('DELETE FROM '.$db->prefix.'topics WHERE subject=\''.$db->escape($_GET['subject']).'\' AND posted=\''.$db->escape($_GET['posted']).'\'')
+				or error('Unable to delete topic', __FILE__, __LINE__, $db->error());
 			redirect('admin_loader.php?plugin=AMP_Global_topic.php', 'Topic(s) Removed');
 		break;
 		case 'stick':
-			$db->query('UPDATE '.$db->prefix.'topics SET sticky=1 WHERE subject=\''.$db->escape($_GET['subject']).'\' AND posted=\''.$db->escape($_GET['posted']).'\'') or error('Unable to update topic', __FILE__, __LINE__, $db->error());
+			$db->query('UPDATE '.$db->prefix.'topics SET sticky=1 WHERE subject=\''.$db->escape($_GET['subject']).'\' AND posted=\''.$db->escape($_GET['posted']).'\'')
+				or error('Unable to update topic', __FILE__, __LINE__, $db->error());
 			redirect('admin_loader.php?plugin=AMP_Global_topic.php', 'Topic(s) Stuck');
 		break;
 		case 'unstick':
-			$db->query('UPDATE '.$db->prefix.'topics SET sticky=0 WHERE subject=\''.$db->escape($_GET['subject']).'\' AND posted=\''.$db->escape($_GET['posted']).'\'') or error('Unable to update topic', __FILE__, __LINE__, $db->error());
+			$db->query('UPDATE '.$db->prefix.'topics SET sticky=0 WHERE subject=\''.$db->escape($_GET['subject']).'\' AND posted=\''.$db->escape($_GET['posted']).'\'')
+				or error('Unable to update topic', __FILE__, __LINE__, $db->error());
 			redirect('admin_loader.php?plugin=AMP_Global_topic.php', 'Topic(s) Unstuck');
 		break;
 		case 'open':
-			$db->query('UPDATE '.$db->prefix.'topics SET closed=0 WHERE subject=\''.$db->escape($_GET['subject']).'\' AND posted=\''.$db->escape($_GET['posted']).'\'') or error('Unable to update topic', __FILE__, __LINE__, $db->error());
+			$db->query('UPDATE '.$db->prefix.'topics SET closed=0 WHERE subject=\''.$db->escape($_GET['subject']).'\' AND posted=\''.$db->escape($_GET['posted']).'\'')
+				or error('Unable to update topic', __FILE__, __LINE__, $db->error());
 			redirect('admin_loader.php?plugin=AMP_Global_topic.php', 'Topic(s) Opened');
 		break;
 		case 'close':
-			$db->query('UPDATE '.$db->prefix.'topics SET closed=1 WHERE subject=\''.$db->escape($_GET['subject']).'\' AND posted=\''.$db->escape($_GET['posted']).'\'') or error('Unable to update topic', __FILE__, __LINE__, $db->error());
+			$db->query('UPDATE '.$db->prefix.'topics SET closed=1 WHERE subject=\''.$db->escape($_GET['subject']).'\' AND posted=\''.$db->escape($_GET['posted']).'\'')
+				or error('Unable to update topic', __FILE__, __LINE__, $db->error());
 			redirect('admin_loader.php?plugin=AMP_Global_topic.php', 'Topic(s) Closed');
 		break;
 		case 'edit':
 			// Display the admin navigation menu
 			generate_admin_menu($plugin);
-			$result = $db->query('SELECT p.message FROM '.$db->prefix.'posts as p LEFT JOIN '.$db->prefix.'topics as t ON t.id=p.topic_id WHERE t.subject=\''.$db->escape($_GET['subject']).'\' AND t.posted=\''.$db->escape($_GET['posted']).'\' LIMIT 0,1', true) or error('Unable to fetch post info', __FILE__, __LINE__, $db->error());
+			$result = $db->query('SELECT p.message FROM '.$db->prefix.'posts as p LEFT JOIN '.$db->prefix.'topics as t ON t.id=p.topic_id
+				WHERE t.subject=\''.$db->escape($_GET['subject']).'\' AND t.posted=\''.$db->escape($_GET['posted']).'\' LIMIT 0,1', true)
+				or error('Unable to fetch post info', __FILE__, __LINE__, $db->error());
 			$cur_post = $db->fetch_assoc($result);
 ?>
 	<div class="blockform">
@@ -136,15 +156,14 @@ else	// If not, we show the form
 	generate_admin_menu($plugin);
 
 ?>
-	<div class="block">
-		<h2><span>Global topic - v<?php echo PLUGIN_VERSION ?></span></h2>
+	<div class="blockform">
+		<h2><span>Global topic - <?php echo PLUGIN_VERSION ?></span></h2>
 		<div class="box">
 			<div class="inbox">
 				<p>This Plugin allows you to add a topic to multiple forums.</p>
 			</div>
 		</div>
-	</div>
-	<div class="blockform">
+
 		<h2 class="block2"><span>Add Topic</span></h2>
 		<div class="box">
 			<form id="post" method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>">
@@ -217,8 +236,8 @@ else	// If not, we show the form
 			</form>
 		</div>
 	</div>
-</div>
-	<div id="vf" class="blocktable">
+
+	<div class="blocktable block">
 		<h2 class="block2"><span>Manage Global Topics</span></h2>
 		<div class="box">
 			<div class="inbox">
@@ -243,7 +262,7 @@ if ($db->num_rows($resultg))
 ?>
 					<tr>
 						<th class="tcl">
-							<strong><a href="admin_loader.php?plugin=AMP_Global_topic.php&action=edit&subject=<?php echo $cur_global['subject'] ?>&posted=<?php echo $cur_global['posted'] ?>"><?php echo $cur_global['subject'] ?></a></strong>
+							<strong><a href="admin_loader.php?plugin=AMP_Global_topic.php&amp;action=edit&amp;subject=<?php echo urlencode($cur_global['subject']) ?>&amp;posted=<?php echo $cur_global['posted'] ?>"><?php echo $cur_global['subject'] ?></a></strong>
 						</th>
 						<th class="tc2">
 							Forum
@@ -255,7 +274,11 @@ if ($db->num_rows($resultg))
 							<?php echo $lang_forum['Views'] ?>
 						</th>
 						<th class="tcr">
-							<a href="admin_loader.php?plugin=AMP_Global_topic.php&action=delete&subject=<?php echo $cur_global['subject'] ?>&posted=<?php echo $cur_global['posted'] ?>">Delete</a> | <a href="admin_loader.php?plugin=AMP_Global_topic.php&action=stick&subject=<?php echo $cur_global['subject'] ?>&posted=<?php echo $cur_global['posted'] ?>">Stick</a>/<a href="admin_loader.php?plugin=AMP_Global_topic.php&action=unstick&subject=<?php echo $cur_global['subject'] ?>&posted=<?php echo $cur_global['posted'] ?>">Unstick</a> | <a href="admin_loader.php?plugin=AMP_Global_topic.php&action=close&subject=<?php echo $cur_global['subject'] ?>&posted=<?php echo $cur_global['posted'] ?>">Close</a>/<a href="admin_loader.php?plugin=AMP_Global_topic.php&action=open&subject=<?php echo $cur_global['subject'] ?>&posted=<?php echo $cur_global['posted'] ?>">Open</a>
+							<a href="admin_loader.php?plugin=AMP_Global_topic.php&amp;action=delete&amp;subject=<?php echo urlencode($cur_global['subject']) ?>&amp;posted=<?php echo $cur_global['posted'] ?>">Delete</a>
+							| <a href="admin_loader.php?plugin=AMP_Global_topic.php&amp;action=stick&amp;subject=<?php echo urlencode($cur_global['subject']) ?>&amp;posted=<?php echo $cur_global['posted'] ?>">Stick</a>/<a
+							href="admin_loader.php?plugin=AMP_Global_topic.php&amp;action=unstick&amp;subject=<?php echo urlencode($cur_global['subject']) ?>&amp;posted=<?php echo $cur_global['posted'] ?>">Unstick</a>
+							| <a href="admin_loader.php?plugin=AMP_Global_topic.php&amp;action=close&amp;subject=<?php echo urlencode($cur_global['subject']) ?>&amp;posted=<?php echo $cur_global['posted'] ?>">Close</a>/<a
+							href="admin_loader.php?plugin=AMP_Global_topic.php&amp;action=open&amp;subject=<?php echo urlencode($cur_global['subject']) ?>&amp;posted=<?php echo $cur_global['posted'] ?>">Open</a>
 						</th>
 					</tr>
 <?php
@@ -268,7 +291,7 @@ if ($db->num_rows($resultg))
 		$icon_type = 'icon';
 
 		if ($cur_topic['moved_to'] == null)
-			$last_post = '<a href="viewtopic.php?pid='.$cur_topic['last_post_id'].'#p'.$cur_topic['last_post_id'].'">'.format_time($cur_topic['last_post']).'</a> <span class="byuser">'.$lang_common['by'].'&nbsp;'.pun_htmlspecialchars($cur_topic['last_poster']).'</span>';
+			$last_post = '<a href="viewtopic.php?pid='.$cur_topic['last_post_id'].'#p'.$cur_topic['last_post_id'].'">'.format_time($cur_topic['last_post']).'</a> <span class="byuser">'.$lang_common['by'].'&amp;nbsp;'.pun_htmlspecialchars($cur_topic['last_poster']).'</span>';
 		else
 			$last_post = '&nbsp;';
 
@@ -299,7 +322,7 @@ if ($db->num_rows($resultg))
 
 		if ($cur_topic['sticky'] == '1')
 		{
-			$subject = '<span class="stickytext">'.$lang_forum['Sticky'].': </span>'.$subject;
+			$subject = '<span class="stickytext">'.$lang_forum['Sticky'].'</span> '.$subject;
 			$item_status .= ' isticky';
 			$icon_text .= ' '.$lang_forum['Sticky'];
 		}
@@ -359,3 +382,5 @@ else
 }
 
 ?>
+
+</div>
