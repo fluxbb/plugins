@@ -210,7 +210,7 @@ if (isset($_POST['make_backup']))
 			if (empty($username))
 				message($lang_admin_plugin_backup['No username error']);
 
-			if ($password1 != $password2))
+			if ($password1 != $password2)
 				message($lang_admin_plugin_backup['Password mismatch error']);
 
 			if (isset($_POST['ssl']) && $_POST['ssl'] == '1')
