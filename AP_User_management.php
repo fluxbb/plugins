@@ -119,7 +119,6 @@ elseif (isset($_POST['add_user']))
 
 	$timezone = '0';
 	$language = isset($_POST['language']) ? $_POST['language'] : $pun_config['o_default_lang'];
-	$save_pass = (!isset($_POST['save_pass']) || $_POST['save_pass'] != '1') ? '0' : '1';
 
 	$email_setting = intval(1);
 
@@ -130,7 +129,7 @@ elseif (isset($_POST['add_user']))
 	$password_hash = pun_hash($password1);
 
 	// Add the user
-	$db->query('INSERT INTO '.$db->prefix.'users (username, group_id, password, email, email_setting, save_pass, timezone, language, style, registered, registration_ip, last_visit) VALUES(\''.$db->escape($username).'\', '.$intial_group_id.', \''.$password_hash.'\', \''.$email1.'\', '.$email_setting.', '.$save_pass.', '.$timezone.' , \''.$language.'\', \''.$pun_config['o_default_style'].'\', '.$now.', \''.get_remote_address().'\', '.$now.')') or error('Unable to create user', __FILE__, __LINE__, $db->error());
+	$db->query('INSERT INTO '.$db->prefix.'users (username, group_id, password, email, email_setting, timezone, language, style, registered, registration_ip, last_visit) VALUES(\''.$db->escape($username).'\', '.$intial_group_id.', \''.$password_hash.'\', \''.$email1.'\', '.$email_setting.', '.$timezone.' , \''.$language.'\', \''.$pun_config['o_default_style'].'\', '.$now.', \''.get_remote_address().'\', '.$now.')') or error('Unable to create user', __FILE__, __LINE__, $db->error());
 	$new_uid = $db->insert_id();
 
 	// Should we alert people on the admin mailing list that a new user has registered?
