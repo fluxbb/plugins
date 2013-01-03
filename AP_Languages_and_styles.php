@@ -72,7 +72,7 @@ else	// If not, we show the form
 	$result = $db->query('SELECT language, count(*) as number FROM '.$db->prefix.'users WHERE id > 1 GROUP BY language  ORDER BY number') or error('Unable to fetch lang settings', __FILE__, __LINE__, $db->error());
 	$number = $db->num_rows($db->query('SELECT username from '.$db->prefix.'users WHERE id > 1'));
 	while ($cur_lang = $db->fetch_assoc($result)) {
-		echo RoundSigDigs($cur_lang['number'] / $number * 100,3).'% '.str_replace('_',' ',$cur_lang['language']).'<br>';
+		echo RoundSigDigs($cur_lang['number'] / $number * 100,3).'% '.str_replace('_',' ',$cur_lang['language']).'<br />';
 	}
 ?>
 								</td>
@@ -129,7 +129,7 @@ else	// If not, we show the form
 	$result = $db->query('SELECT style, count(*) as number FROM '.$db->prefix.'users WHERE id > 1 GROUP BY style ORDER BY number') or error('Unable to fetch style settings', __FILE__, __LINE__, $db->error());
 	$number = $db->num_rows($db->query('SELECT username from '.$db->prefix.'users WHERE id > 1'));
 	while ($cur_lang = $db->fetch_assoc($result)) {
-		echo RoundSigDigs($cur_lang['number'] / $number * 100,3).'% '.str_replace('_',' ',$cur_lang['style']).'<br>';
+		echo RoundSigDigs($cur_lang['number'] / $number * 100,3).'% '.str_replace('_',' ',$cur_lang['style']).'<br />';
 	}
 ?>
 								</td>
