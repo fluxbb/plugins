@@ -15,7 +15,10 @@ if (!defined('PUN'))
 
 // Tell admin_loader.php that this is indeed a plugin and that it is loaded
 define('PUN_PLUGIN_LOADED', 1);
-define('PLUGIN_VERSION',1.3);
+define('PLUGIN_VERSION',1.4);
+
+if (!defined('FORUM_CACHE_FUNCTIONS_LOADED'))
+	require PUN_ROOT.'include/cache.php';
 
 if (isset($_POST['prune']))
 {
@@ -41,6 +44,10 @@ if (isset($_POST['prune']))
 	$user_time = time() - ($_POST['days'] * 86400);
 	$result = $db->query('DELETE FROM '.$db->prefix.'users WHERE (num_posts < '.intval($_POST['posts']).') AND ('.$prune.' < '.intval($user_time).') AND (id > 2) AND ('.$admod_delete.')'.$verified, true) or error('Unable to delete users', __FILE__, __LINE__, $db->error());
 	$users_pruned = $db->affected_rows();
+
+	// Regenerate the users info cache
+	generate_users_info_cache();
+
 	message('Pruning complete. Users pruned '.$users_pruned.'.');
 }
 elseif (isset($_POST['add_user']))
@@ -156,9 +163,12 @@ elseif (isset($_POST['add_user']))
 		$mail_message = str_replace('<username>', $username, $mail_message);
 		$mail_message = str_replace('<password>', $password1, $mail_message);
 		$mail_message = str_replace('<login_url>', $pun_config['o_base_url'].'/login.php', $mail_message);
-		$mail_message = str_replace('<board_mailer>', $pun_config['o_board_title'].' '.$lang_common['Mailer'], $mail_message);
+		$mail_message = str_replace('<board_mailer>', sprintf($lang_common['Mailer'], $pun_config['o_board_title']), $mail_message);
 		pun_mail($email1, $mail_subject, $mail_message);
 	}
+
+	// Regenerate the users info cache
+	generate_users_info_cache();
 
 	message('User Created');
 }
@@ -173,7 +183,7 @@ else
 		<div class="box">
 			<div class="inbox">
 				<p>This Plugin allows you to prune users a certain number of days old with less than a certain number of posts.</p>
-				<p><strong>Warning: This has a permanent and instant effect use with extreme caution (it is recomended you make a backup before using this feature).</strong></p>
+				<p><strong>Warning: This has a permanent and instant effect. Use with extreme caution! It is recomended you make a backup before using this feature.</strong></p>
 				<p>It also allows you to manually add users, this is useful for closed forum e.g. if you have disabled user registration in options.</p>
 			</div>
 		</div>
