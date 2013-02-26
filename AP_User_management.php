@@ -231,7 +231,7 @@ else
 								<th scope="row">User status</th>
 								<td>
 									<input type="radio" name="verified" value="1" />&nbsp;<strong>Delete any</strong>&nbsp;&nbsp;&nbsp;<input type="radio" name="verified" value="0" checked="checked" />&nbsp;<strong>Delete only verified</strong>&nbsp;&nbsp;&nbsp;<input type="radio" name="verified" value="2" />&nbsp;<strong>Delete only unverified</strong>
-									<span>Decideds if (un)verified users should be deleted.</span>
+									<span>Decides if (un)verified users should be deleted.</span>
 								</td>
 							</tr>
 						</table>
