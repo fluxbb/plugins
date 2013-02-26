@@ -163,7 +163,7 @@ elseif (isset($_POST['add_user']))
 		$mail_message = str_replace('<username>', $username, $mail_message);
 		$mail_message = str_replace('<password>', $password1, $mail_message);
 		$mail_message = str_replace('<login_url>', $pun_config['o_base_url'].'/login.php', $mail_message);
-		$mail_message = str_replace('<board_mailer>', sprintf($lang_common['Mailer'], $pun_config['o_board_title']), $mail_message);
+		$mail_message = str_replace('<board_mailer>', $pun_config['o_board_title'], $mail_message);
 		pun_mail($email1, $mail_subject, $mail_message);
 	}
 
