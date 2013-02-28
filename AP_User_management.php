@@ -42,12 +42,22 @@ if (isset($_POST['prune']))
 	$prune = ($_POST['prune_by'] == 1) ? 'registered' : 'last_visit';
 
 	$user_time = time() - ($_POST['days'] * 86400);
-	$result = $db->query('DELETE FROM '.$db->prefix.'users WHERE (num_posts < '.intval($_POST['posts']).') AND ('.$prune.' < '.intval($user_time).') AND (id > 2) AND ('.$admod_delete.')'.$verified, true) or error('Unable to delete users', __FILE__, __LINE__, $db->error());
-	$users_pruned = $db->affected_rows();
-
+	$result = $db->query('SELECT id FROM '.$db->prefix.'users WHERE (num_posts < '.intval($_POST['posts']).') AND ('.$prune.' < '.intval($user_time).') AND (id > 2) AND ('.$admod_delete.')'.$verified, true) or error('Unable to fetch users to prune', __FILE__, __LINE__, $db->error());
+	
+	$user_ids = array();
+	while ($id = $db->result($result))
+		$user_ids[] = $id;
+	
+	if (!empty($user_ids))
+	{
+		$db->query('DELETE FROM '.$db->prefix.'users WHERE id IN ('.implode(',', $user_ids).')') or error('Unable to delete users', __FILE__, __LINE__, $db->error());
+		$db->query('UPDATE '.$db->prefix.'posts SET poster_id=1 WHERE poster_id IN ('.implode(',', $user_ids).')') or error('Unable to mark posts as guest posts', __FILE__, __LINE__, $db->error());
+	}
+	
 	// Regenerate the users info cache
 	generate_users_info_cache();
 
+	$users_pruned = count($user_ids);
 	message('Pruning complete. Users pruned '.$users_pruned.'.');
 }
 elseif (isset($_POST['add_user']))
