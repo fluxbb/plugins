@@ -129,7 +129,7 @@ else	// If not, we show the "Show text" form
 		document.getElementById("btnSubmit").disabled = true;
 	}
 </script>
-	<div id="exampleplugin" class="blockform">
+	<div id="exampleplugin" class="plugin blockform">
 		<h2><span>Remove Users </span>v1.0</h2>
 		<div class="box">
 			<div class="inbox">

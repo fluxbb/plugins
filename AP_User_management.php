@@ -24,7 +24,11 @@ if (isset($_POST['prune']))
 {
 	// Make sure something something was entered
 	if ((trim($_POST['days']) == '') || trim($_POST['posts']) == '')
+	{
+		// Display the admin navigation menu
+		generate_admin_menu($plugin);
 		message('You need to set all settings!');
+	}
 	if ($_POST['admods_delete']) {
 		$admod_delete = 'group_id > 0';
 	}
@@ -58,6 +62,9 @@ if (isset($_POST['prune']))
 	generate_users_info_cache();
 
 	$users_pruned = count($user_ids);
+
+// Display the admin navigation menu
+generate_admin_menu($plugin);
 	message('Pruning complete. Users pruned '.$users_pruned.'.');
 }
 elseif (isset($_POST['add_user']))
@@ -84,28 +91,60 @@ elseif (isset($_POST['add_user']))
 
 	// Validate username and passwords
 	if (strlen($username) < 2)
+	{
+		// Display the admin navigation menu
+		generate_admin_menu($plugin);
 		message($lang_prof_reg['Username too short']);
+	}
 	else if (pun_strlen($username) > 25)	// This usually doesn't happen since the form element only accepts 25 characters
-	    message($lang_common['Bad request']);
+	{
+		// Display the admin navigation menu
+		generate_admin_menu($plugin);
+		message($lang_common['Bad request']);
+		}
 	else if (strlen($password1) < 4)
+	{
+		// Display the admin navigation menu
+		generate_admin_menu($plugin);
 		message($lang_prof_reg['Pass too short']);
+	}
 	else if ($password1 != $password2)
+	{
+		// Display the admin navigation menu
+		generate_admin_menu($plugin);
 		message($lang_prof_reg['Pass not match']);
+	}
 	else if (!strcasecmp($username, 'Guest') || !strcasecmp($username, $lang_common['Guest']))
+	{
+		// Display the admin navigation menu
+		generate_admin_menu($plugin);
 		message($lang_prof_reg['Username guest']);
+	}
 	else if (preg_match('/[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}/', $username))
+	{
+		// Display the admin navigation menu
+		generate_admin_menu($plugin);
 		message($lang_prof_reg['Username IP']);
+	}
 	else if ((strpos($username, '[') !== false || strpos($username, ']') !== false) && strpos($username, '\'') !== false && strpos($username, '"') !== false)
 		message($lang_prof_reg['Username reserved chars']);
 	else if (preg_match('#\[b\]|\[/b\]|\[u\]|\[/u\]|\[i\]|\[/i\]|\[color|\[/color\]|\[quote\]|\[quote=|\[/quote\]|\[code\]|\[/code\]|\[img\]|\[/img\]|\[url|\[/url\]|\[email|\[/email\]#i', $username))
+	{
+		// Display the admin navigation menu
+		generate_admin_menu($plugin);
 		message($lang_prof_reg['Username BBCode']);
+	}
 
 	// Check username for any censored words
 	if ($pun_config['o_censoring'] == '1')
 	{
 		// If the censored username differs from the username
 		if (censor_words($username) != $username)
+		{
+			// Display the admin navigation menu
+			generate_admin_menu($plugin);
 			message($lang_register['Username censor']);
+		}
 	}
 
 	// Check that the username (or a too similar username) is not already registered
@@ -114,6 +153,8 @@ elseif (isset($_POST['add_user']))
 	if ($db->num_rows($result))
 	{
 		$busy = $db->result($result);
+		// Display the admin navigation menu
+		generate_admin_menu($plugin);
 		message($lang_register['Username dupe 1'].' '.pun_htmlspecialchars($busy).'. '.$lang_register['Username dupe 2']);
 	}
 
@@ -122,7 +163,11 @@ elseif (isset($_POST['add_user']))
 	require PUN_ROOT.'include/email.php';
 
 	if (!is_valid_email($email1))
-		message($lang_common['Invalid e-mail']);
+	{
+		// Display the admin navigation menu
+		generate_admin_menu($plugin);
+		message($lang_common['Invalid email']);
+	}
 
 	// Check if someone else already has registered with that e-mail address
 	$dupe_list = array();
@@ -180,6 +225,8 @@ elseif (isset($_POST['add_user']))
 	// Regenerate the users info cache
 	generate_users_info_cache();
 
+	// Display the admin navigation menu
+	generate_admin_menu($plugin);
 	message('User Created');
 }
 else
@@ -188,7 +235,7 @@ else
 	generate_admin_menu($plugin);
 
 ?>
-	<div class="block">
+	<div id="exampleplugin" class="plugin blockform">
 		<h2><span>User management - v<?php echo PLUGIN_VERSION ?></span></h2>
 		<div class="box">
 			<div class="inbox">
@@ -248,7 +295,7 @@ else
 						</div>
 					</fieldset>
 				</div>
-			<p class="submitend"><input type="submit" name="prune" value="Go!" tabindex="2" /></p>
+			<p class="submittop"><input type="submit" name="prune" value="Go!" tabindex="2" /></p>
 			</form>
 		</div>
 
@@ -290,7 +337,7 @@ else
 						</div>
 					</fieldset>
 				</div>
-				<p class="submitend"><input type="submit" name="add_user" value="Go!" tabindex="4" /></p>
+				<p class="submittop"><input type="submit" name="add_user" value="Go!" tabindex="4" /></p>
 			</form>
 		</div>
 	</div>

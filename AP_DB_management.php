@@ -98,6 +98,8 @@ function get_table_def_mysql($table, $crlf)
 	$result = $db->query($field_query);
 	if(!$result)
 	{
+		// Display the admin navigation menu
+		generate_admin_menu( $plugin );
 		message('Failed to get field list');
 	}
 
@@ -133,6 +135,8 @@ function get_table_def_mysql($table, $crlf)
 	$result = $db->query($key_query);
 	if(!$result)
 	{
+		// Display the admin navigation menu
+		generate_admin_menu( $plugin );
 		message('Failed to get Indexed Fields');
 	}
 
@@ -193,6 +197,8 @@ function get_table_content_mysql($table, $handler)
 	// Grab the data from the table.
 	if (!($result = $db->query("SELECT * FROM $table")))
 	{
+		// Display the admin navigation menu
+		generate_admin_menu( $plugin );
 		message('Failed to get table content');
 	}
 
@@ -389,6 +395,8 @@ switch($db_type)
 	case 'mysqli':
 		break;
 	default:
+		// Display the admin navigation menu
+		generate_admin_menu( $plugin );
 		message('Sorry your database type is not yet supported');
 }
 //Start actual db stuff
@@ -492,6 +500,8 @@ elseif ( isset($_POST['restore_start']) ) {
 	$backup_file_type = (!empty($HTTP_POST_FILES['backup_file']['type'])) ? $HTTP_POST_FILES['backup_file']['type'] : "";
 	if($backup_file_tmpname == "" || $backup_file_name == "")
 	{
+		// Display the admin navigation menu
+		generate_admin_menu( $plugin );
 		message('No file was uploaed or the upload failed, the database was not restored');
 	}
 	if( preg_match("/^(text\/[a-zA-Z]+)|(application\/(x\-)?gzip(\-compressed)?)|(application\/octet-stream)$/is", $backup_file_type) )
@@ -518,6 +528,8 @@ elseif ( isset($_POST['restore_start']) ) {
 			}
 			else
 			{
+				// Display the admin navigation menu
+				generate_admin_menu( $plugin );
 				message('Sorry the database could not be restored');
 			}
 		}
@@ -560,6 +572,8 @@ elseif ( isset($_POST['restore_start']) ) {
 				$result = $db->query($sql);
 				if(!$result)
 				{
+					// Display the admin navigation menu
+					generate_admin_menu( $plugin );
 					message('Error imported backup file, the database probably has not been restored');
 				}
 			}
@@ -589,6 +603,8 @@ elseif ( isset($_POST['restore_start']) ) {
 	</div>
 <?php
 	} else {
+	// Display the admin navigation menu
+	generate_admin_menu( $plugin );
 	message('Restore Complete');
 	}
 }
@@ -598,6 +614,8 @@ elseif (isset($_POST['repairall'])) {
 	$sql = 'SHOW TABLE STATUS';
 	if (!$result = $db->query($sql))
 	{
+		// Display the admin navigation menu
+		generate_admin_menu( $plugin );
 		// This makes no sense, the board would be dead... :P
 		message('Tables error, repair failed');
 	}
@@ -616,9 +634,13 @@ elseif (isset($_POST['repairall'])) {
 		$sql = 'REPAIR TABLE ' . $tables[$i];
 		if (!$result = $db->query($sql))
 		{
+			// Display the admin navigation menu
+			generate_admin_menu( $plugin );
 			message('SQL error, repair failed');
 		}
 	}
+	// Display the admin navigation menu
+	generate_admin_menu( $plugin );
 	message('All tables repaired');
 }
 elseif (isset($_POST['optimizeall'])) {
@@ -626,6 +648,8 @@ elseif (isset($_POST['optimizeall'])) {
 	$sql = 'SHOW TABLE STATUS';
 	if (!$result = $db->query($sql))
 	{
+		// Display the admin navigation menu
+		generate_admin_menu( $plugin );
 		// This makes no sense, the board would be dead... :P
 		message('Tables error, optimise failed');
 	}
@@ -644,9 +668,13 @@ elseif (isset($_POST['optimizeall'])) {
 		$sql = 'OPTIMIZE TABLE ' . $tables[$i];
 		if (!$result = $db->query($sql))
 		{
+			// Display the admin navigation menu
+			generate_admin_menu( $plugin );
 			message('SQL error, optimise failed');
 		}
 	}
+	// Display the admin navigation menu
+	generate_admin_menu( $plugin );
 	message('All tables optimised');
 }
 elseif (isset($_POST['submit'])) {
@@ -655,6 +683,8 @@ elseif (isset($_POST['submit'])) {
 	$this_query = $_POST['this_query'];
 	if (empty($this_query))
 	{
+		// Display the admin navigation menu
+		generate_admin_menu( $plugin );
 		//no query error
 		message('No Query Duh!');
 	}
@@ -685,6 +715,8 @@ elseif (isset($_POST['submit'])) {
 		$result = $db->query($query);
 		if (!$result)
 		{
+			// Display the admin navigation menu
+			generate_admin_menu( $plugin );
 			//query error
 			message('SQL Error');
 		}
@@ -694,6 +726,8 @@ elseif (isset($_POST['submit'])) {
 		if ($db->num_rows($result))
 		{
 			if ($db->num_rows($result) > 500) {
+				// Display the admin navigation menu
+				generate_admin_menu( $plugin );
 				message('Query result too long to be displayed');
 			}
 			// Remember the number of fields (aka columns) and the number of rows:
@@ -743,7 +777,7 @@ elseif (isset($_POST['submit'])) {
 else {
 generate_admin_menu($plugin);
 ?>
-	<div class="block">
+	<div id="exampleplugin" class="plugin blockform">
 		<h2><span>Database management - v<?php echo PLUGIN_VERSION ?></span></h2>
 		<div class="box">
 			<div class="inbox">
@@ -775,6 +809,8 @@ generate_admin_menu($plugin);
 $sql = 'SHOW TABLE STATUS';
 if (!$result = $db->query($sql))
 {
+	// Display the admin navigation menu
+	generate_admin_menu( $plugin );
 	message('Tables error');
 }
 $pun_tables = array('bans', 'categories', 'censoring', 'config', 'forum_perms', 'forums', 'groups', 'online', 'posts', 'ranks', 'reports', 'search_cache', 'search_matches', 'search_words', 'subscriptions', 'topics', 'users');
@@ -818,7 +854,7 @@ else {
 						</div>
 					</fieldset>
 				</div>
-			<p class="submitend"><input type="submit" name="backupstart" value="Start backup" class="mainoption" /></p>
+			<p class="submittop"><input type="submit" name="backupstart" value="Start backup" class="mainoption" /></p>
 			</form>
 			<form enctype="multipart/form-data" method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>">
 				<div class="inform">
@@ -835,7 +871,7 @@ else {
 						</div>
 					</fieldset>
 				</div>
-			<p class="submitend"><input type="submit" name="restore_start" value="Start restore" class="mainoption" /></p>
+			<p class="submittop"><input type="submit" name="restore_start" value="Start restore" class="mainoption" /></p>
 			</form>
 		</div>
 		<h2 class="block2"><span>Additional options</span></h2>
@@ -856,7 +892,7 @@ else {
 					</fieldset>
 				</div>
 				<div class="inform">
-					<p class="submitend"><input type="submit" name="submit" value="Run query" /></p>
+					<p class="submittop"><input type="submit" name="submit" value="Run query" /></p>
 					<fieldset>
 						<legend>Additional Functions</legend>
 						<div class="infldset">
