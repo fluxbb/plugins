@@ -22,7 +22,7 @@ generate_admin_menu($plugin);
 ?>
 
 
-	<div class="block">
+	<div id="exampleplugin" class="plugin blockform">
 		<h2><span>PunBB Shell</span></h2>
 		<div class="box">
 			<div class="inbox">

@@ -34,13 +34,13 @@ if (isset($_POST['lang']))
 {
 	// Do Post
 	$db->query('UPDATE '.$db->prefix.'users SET language=\''.$_POST['form']['language'].'\' WHERE id>1') or error('Unable to set lang settings', __FILE__, __LINE__, $db->error());
-	message('Languages Reset');
+	redirect($_SERVER['REQUEST_URI'], 'Languages Reset');
 }
 elseif (isset($_POST['style']))
 {
 	// Do Post
 	$db->query('UPDATE '.$db->prefix.'users SET style=\''.$_POST['form']['style'].'\' WHERE id>1') or error('Unable to set style settings', __FILE__, __LINE__, $db->error());
-	message('Styles Reset');
+	redirect($_SERVER['REQUEST_URI'], 'Styles Reset');
 }
 else	// If not, we show the form
 {
@@ -48,7 +48,7 @@ else	// If not, we show the form
 	generate_admin_menu($plugin);
 
 ?>
-	<div class="block">
+	<div id="exampleplugin" class="plugin blockform">
 		<h2><span>Language and style statistics/resetter - v<?php echo PLUGIN_VERSION ?></span></h2>
 		<div class="box">
 			<div class="inbox">

@@ -21,17 +21,21 @@ require PUN_ROOT.'include/cache.php';
 // If the "Regenerate all cache" button was clicked
 if (isset($_POST['regen_all_cache']))
 {
-
 	// We re-generate it all
 	generate_config_cache();
 	generate_bans_cache();
 	generate_quickjump_cache();
 
+	if (version_compare(FORUM_VERSION, '1.5', '<'))
+	{
+		generate_ranks_cache();
+	}
+
 	// Display the admin navigation menu
 	generate_admin_menu($plugin);
 
 ?>
-	<div class="block">
+	<div id="exampleplugin" class="plugin blockform">
 		<h2><span>Clear your cache</span></h2>
 		<div class="box">
 			<div class="inbox">
@@ -54,7 +58,7 @@ else if (isset($_POST['regen_ban_cache']))
 	generate_admin_menu($plugin);
 
 ?>
-	<div class="block">
+	<div id="exampleplugin" class="plugin blockform">
 		<h2><span>Clear your cache</span></h2>
 		<div class="box">
 			<div class="inbox">
@@ -70,7 +74,6 @@ else if (isset($_POST['regen_ban_cache']))
 // If the "Regenerate ranks cache" button was clicked
 else if (isset($_POST['regen_ranks_cache']))
 {
-
 	// We re-generate it
 	generate_ranks_cache();
 
@@ -78,7 +81,7 @@ else if (isset($_POST['regen_ranks_cache']))
 	generate_admin_menu($plugin);
 
 ?>
-	<div class="block">
+	<div id="exampleplugin" class="plugin blockform">
 		<h2><span>Clear your cache</span></h2>
 		<div class="box">
 			<div class="inbox">
@@ -101,7 +104,7 @@ else if (isset($_POST['regen_config_cache']))
 	generate_admin_menu($plugin);
 
 ?>
-	<div class="block">
+	<div id="exampleplugin" class="plugin blockform">
 		<h2><span>Clear your cache</span></h2>
 		<div class="box">
 			<div class="inbox">
@@ -124,7 +127,7 @@ else if (isset($_POST['regen_jump_cache']))
 	generate_admin_menu($plugin);
 
 ?>
-	<div class="block">
+	<div id="exampleplugin" class="plugin blockform">
 		<h2><span>Clear your cache</span></h2>
 		<div class="box">
 			<div class="inbox">
@@ -142,16 +145,27 @@ else	// If not, we show the form
 	generate_admin_menu($plugin);
 
 ?>
-	<div id="exampleplugin" class="blockform">
+	<div id="exampleplugin" class="plugin blockform">
 		<h2><span>Re-generate your cache</span></h2>
 		<div class="box">
 			<div class="inbox">
-				<p>This plugin allows you to easily and simply re-generate your PunBB cache files</p>
+				<p>This plugin allows you to easily and simply re-generate your FluxBB cache files</p>
 
 				<form id="regenerate" method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>&amp;foo=bar">
 					<p><input type="submit" name="regen_all_cache" value="Regenerate all cache files" tabindex="2" /></p>
 					<p><input type="submit" name="regen_ban_cache" value="Regenerate ban cache" tabindex="3" /></p>
-					<p><input type="submit" name="regen_ranks_cache" value="Regenerate ranks cache" tabindex="4" /></p>
+<?php
+
+if (version_compare(FORUM_VERSION, '1.5', '<'))
+{
+            echo '
+					<p>
+						<input type="submit" name="regen_ranks_cache" value="Regenerate ranks cache" tabindex="4" />
+					</p>';
+
+}
+
+?>
 					<p><input type="submit" name="regen_config_cache" value="Regenerate config cache" tabindex="5" /></p>
 					<p><input type="submit" name="regen_jump_cache" value="Regenerate quickjump cache" tabindex="6" /></p>
 				</form>

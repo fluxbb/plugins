@@ -257,7 +257,7 @@ else
 	generate_admin_menu($plugin);
 
 ?>
-	<div id="exampleplugin" class="blockform">
+	<div id="exampleplugin" class="plugin blockform">
 		<h2><span><?php echo $lang_admin_plugin_backup['FluxBB Backup'] ?></span></h2>
 		<div class="box">
 			<div class="inbox">
@@ -284,7 +284,7 @@ else
 									<th scope="row"><?php echo $lang_admin_plugin_backup['Filesystem label'] ?></th>
 									<td>
 										<input type="radio" name="method" value="filesystem" />&#160;<?php echo $lang_admin_plugin_backup['Filesystem help'] ?>
-										<span><?php echo $lang_admin_plugin_backu['Directory label'] ?>&#160;<input type="text" name="dir" size="50" value="<?php echo pun_htmlspecialchars(getcwd()); ?>" /></span>
+										<span><?php echo $lang_admin_plugin_backup['Directory label'] ?>&#160;<input type="text" name="dir" size="50" value="<?php echo pun_htmlspecialchars(getcwd()); ?>" /></span>
 										<span style="color:red"><?php echo $lang_admin_plugin_backup['Write access'] ?></span>
 									</td>
 								</tr>

@@ -130,13 +130,13 @@ else
 // Display the admin navigation menu
 generate_admin_menu($plugin);
 ?>
-	<div class="block">
+	<div id="exampleplugin" class="plugin blockform">
 		<h2><span>Author Update - v2.1</span></h2>
 		<div class="box">
 			<div class="inbox">
 				<form method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>">
 					<p>This plugin modifies the author of one or more posts.
-					<input type="submit" style="float: right; margin-top: -1.2em;" tabindex="1" <?php
+					<input type="submit" style="float: right;" tabindex="1" <?php
 						echo (isset($_POST['menu'])) ? 'name="menu_" value="Use Text Fields"' : 'name="menu" value="Use Menus"'; ?> />
 					</p>
 				</form>
