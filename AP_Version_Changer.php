@@ -20,8 +20,11 @@ define('PUN_PLUGIN_LOADED', 1);
 if (isset($_POST['update_version']))
 {
 	if (trim($_POST['to_version']) == '')
+	{
+		// Display the admin navigation menu
+		generate_admin_menu( $plugin );
 		message('You must enter a version number to change to.');
-
+	}
 
 	$db->query('UPDATE '.$db->prefix.'config SET conf_value=\''.$db->escape(trim($_POST['to_version'])).'\' WHERE conf_name=\'o_cur_version\'') or error('Unable to update board version string', __FILE__, __LINE__, $db->error());
 
@@ -29,21 +32,7 @@ if (isset($_POST['update_version']))
 	require_once PUN_ROOT.'include/cache.php';
 	generate_config_cache();
 
-
-	// Display the admin navigation menu
-	generate_admin_menu($plugin);
-
-?>
-	<div class="block">
-		<h2><span>Version Changer</span></h2>
-		<div class="box">
-			<div class="inbox">
-				<p>Version updated.</p>
-				<p><a href="javascript: history.go(-1)">Go back</a></p>
-			</div>
-		</div>
-	</div>
-<?php
+	redirect($_SERVER['REQUEST_URI'], 'Version updated.');
 
 }
 else
@@ -52,7 +41,7 @@ else
 	generate_admin_menu($plugin);
 
 ?>
-	<div id="exampleplugin" class="blockform">
+	<div id="exampleplugin" class="plugin blockform">
 		<h2><span>Version Changer</span></h2>
 		<div class="box">
 			<form method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>&amp;foo=bar">
@@ -60,7 +49,7 @@ else
 					<fieldset>
 						<legend>Enter a version number and hit "Update"</legend>
 						<div class="infldset">
-							<p>This plugin allows you go update the PunBB version string. Yes, that's it :)</p>
+							<p>This plugin allows you go update the FluxBB version string. Yes, that's it :)</p>
 							<table class="aligntop" cellspacing="0">
 								<tr>
 									<th scope="row">New version</th>
@@ -70,7 +59,7 @@ else
 									</td>
 								</tr>
 							</table>
-							<div class="fsetsubmit"><input type="submit" name="update_version" value="Update" tabindex="2" /></div>
+							<p class="submittop"><input type="submit" name="update_version" value="Update" tabindex="2" /></p>
 						</div>
 					</fieldset>
 				</div>

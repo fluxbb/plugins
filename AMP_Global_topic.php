@@ -25,9 +25,17 @@ if (isset($_POST['post']))
 	require PUN_ROOT.'include/search_idx.php';
 
 	if (empty($_POST['subject']) || empty($_POST['message']))
+	{
+		// Display the admin navigation menu
+		generate_admin_menu( $plugin );
 		message('Missing Fields');
+	}
 	if (!isset($_POST['forums']))
+	{
+		// Display the admin navigation menu
+		generate_admin_menu( $plugin );
 		message('No Forums Selected');
+	}
 
 	$now = time();
 	$i = 0;
@@ -156,7 +164,7 @@ else	// If not, we show the form
 	generate_admin_menu($plugin);
 
 ?>
-	<div class="blockform">
+	<div id="exampleplugin" class="plugin blockform">
 		<h2><span>Global topic - <?php echo PLUGIN_VERSION ?></span></h2>
 		<div class="box">
 			<div class="inbox">

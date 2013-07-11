@@ -15,21 +15,26 @@ if (!defined('PUN'))
 // Tell admin_loader.php that this is indeed a plugin and that it is loaded
 define('PUN_PLUGIN_LOADED', 1);
 
-
-
 // --------------------------------------------------------------------
-
 // Confirm Page
 
 if (isset($_POST['confirm']))
 {
-	// Make sure message body was entered
-	if (trim($_POST['message_body']) == '')
-		message('You didn\'t enter a message body!');
-
 	// Make sure message subject was entered
 	if (trim($_POST['message_subject']) == '')
+	{
+		// Display the admin navigation menu
+		generate_admin_menu($plugin);
 		message('You didn\'t enter a subject!');
+	}
+
+	// Make sure message body was entered
+	if (trim($_POST['message_body']) == '')
+	{
+		// Display the admin navigation menu
+		generate_admin_menu($plugin);
+		message('You didn\'t enter a message body!');
+	}
 
 	// Display the admin navigation menu
 	generate_admin_menu($plugin);
@@ -44,14 +49,16 @@ if (isset($_POST['confirm']))
    	$row = $db->fetch_assoc($result);
 
 ?>
-	<div id="exampleplugin" class="blockform">
+	<div id="exampleplugin" class="plugin blockform">
 		<h2><span>Broadcast Email - Confirm</span></h2>
 		<div class="box">
 			<div class="inbox">
 				<p>Please confirm your message below.<br /><br />If something is not correct, please <a href="javascript: history.go(-1)">Go Back</a>.</p>
 			</div>
 		</div>
+	</div>
 
+	<div class="blockform">
 		<h2 class="block2"><span>Confirm Message</span></h2>
 		<div class="box">
 			<form id="broadcastemail" method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>">
@@ -83,7 +90,7 @@ if (isset($_POST['confirm']))
 									</td>
 								</tr>
 							</table>
-							<div class="fsetsubmit"><input type="submit" name="send_message" value="Confirmed - Send It." tabindex="3" /></div>
+							<p class="submittop"><input type="submit" name="send_message" value="Confirmed - Send It." tabindex="3" /></p>
 							<p class="topspace">Please hit this button only once. Patience is key.</p>
 						</div>
 					</fieldset>
@@ -133,7 +140,7 @@ else if (isset($_POST['send_message']))
 
 
 ?>
-	<div class="block">
+	<div id="exampleplugin" class="plugin blockform">
 		<h2><span>Broadcast Email - Message Sent</span></h2>
 		<div class="box">
 			<div class="inbox">
@@ -157,7 +164,7 @@ else
 	generate_admin_menu($plugin);
 
 ?>
-	<div id="exampleplugin" class="blockform">
+	<div id="exampleplugin" class="plugin blockform">
 		<h2><span>Broadcast Email</span></h2>
 		<div class="box">
 			<div class="inbox">
@@ -165,7 +172,10 @@ else
 				<p>There will be a confirmation page after this one - to make sure you have not made any mistakes.</p>
 			</div>
 		</div>
+		</div>
 
+  
+  <div class="blockform">
 		<h2 class="block2"><span>Compose Message</span></h2>
 		<div class="box">
 			<form id="broadcastemail" method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>">
@@ -187,12 +197,15 @@ else
 									</td>
 								</tr>
 							</table>
-							<div class="fsetsubmit"><input type="submit" name="confirm" value="Continue to Confirmation" tabindex="3" /></div>
+							<p class="submittop">
+                <input type="submit" name="confirm" value="Continue to Confirmation" tabindex="3" />
+              </div>
 						</div>
 					</fieldset>
 				</div>
 			</form>
 		</div>
+	</div>
 	</div>
 <?php
 

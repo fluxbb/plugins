@@ -23,23 +23,43 @@ if (isset($_POST['run_merge']))
 
 	// Make sure a forum was specified.
 	if (trim($forum1) == '')
+	{
+		// Display the admin navigation menu
+		generate_admin_menu( $plugin );
 		message('You never specified a forum to merge from.');
+	}
 
 	if (trim($forum2) == '')
+	{
+		// Display the admin navigation menu
+		generate_admin_menu( $plugin );
 		message('You never specified a forum to merge to.');
+	}
 
 	//Make sure the forum specified exists
 	$result = $db->query("SELECT * FROM ".$db->prefix."forums WHERE id=".$forum1);
 	if ($db->num_rows($result) == '0')
+	{
+		// Display the admin navigation menu
+		generate_admin_menu( $plugin );
 		message('The forum you specified to merge from does not exist.');
+	}
 
 	$result = $db->query("SELECT * FROM ".$db->prefix."forums WHERE id=".$forum2);
 	if ($db->num_rows($result) == '0')
+	{
+		// Display the admin navigation menu
+		generate_admin_menu( $plugin );
 		message('The forum you specified to merge to does not exist.');
+	}
 
 	//Make sure the forums being merged aren't the same
 	if ($forum1 == $forum2)
+	{
+		// Display the admin navigation menu
+		generate_admin_menu( $plugin );
 		message('The forums you specified are the same.');
+	}
 
 	//Run the update query.
 	$db->query("UPDATE ".$db->prefix."topics set forum_id=".$forum2." where forum_id=".$forum1);
@@ -71,14 +91,17 @@ else	// If not, we show the "Show text" form
 	generate_admin_menu($plugin);
 
 ?>
-	<div id="mergeplugin" class="blockform">
+	<div id="mergeplugin" class="plugin blockform">
 		<h2><span>Merge Forums Plugin</span></h2>
 		<div class="box">
 			<div class="inbox">
 				<p>This plugin merges two forums into one.  It then deletes the old forum.</p>
 			</div>
 		</div>
+	</div>
 
+	<div class="blockform">
+		<h2 class="block2"><span>Merge Forums</span></h2>
 		<div class="box">
 			<form id="merge" method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>">
 				<div class="inform">
