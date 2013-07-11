@@ -21,11 +21,15 @@ require PUN_ROOT.'include/cache.php';
 // If the "Regenerate all cache" button was clicked
 if (isset($_POST['regen_all_cache']))
 {
-
 	// We re-generate it all
 	generate_config_cache();
 	generate_bans_cache();
 	generate_quickjump_cache();
+
+	if (version_compare(FORUM_VERSION, '1.5', '<'))
+	{
+		generate_ranks_cache();
+	}
 
 	// Display the admin navigation menu
 	generate_admin_menu($plugin);
@@ -70,7 +74,6 @@ else if (isset($_POST['regen_ban_cache']))
 // If the "Regenerate ranks cache" button was clicked
 else if (isset($_POST['regen_ranks_cache']))
 {
-
 	// We re-generate it
 	generate_ranks_cache();
 
@@ -153,8 +156,7 @@ else	// If not, we show the form
 					<p><input type="submit" name="regen_ban_cache" value="Regenerate ban cache" tabindex="3" /></p>
 <?php
 
-$forum_version = substr(FORUM_VERSION, 0, -2);
-if ($forum_version == '1.4')
+if (version_compare(FORUM_VERSION, '1.5', '<'))
 {
             echo '
 					<p>
