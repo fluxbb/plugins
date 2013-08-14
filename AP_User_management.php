@@ -1,13 +1,27 @@
 <?php
+/***********************************************************************
 
-/**
- * The User Management plugin can be used to prune user accounts based on the
- * age of the account and the number of posts made by the users. Additionally,
- * the plugin can also be used to add new users.
- *
- * Copyright (C) 2005  Connor Dunn (Connorhd@mypunbb.com)
- * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher
- */
+  Copyright (C) 2010 Guillaume Ferrari (guillaume.ferrari@gmail.com) 
+  and Quy Ton (quy@fluxbb.org) based on code Copyright (C) 2005 
+  Connor Dunn (Connorhd@mypunbb.com)
+  Version française originale : Maximilien Thiel (www.thiel.fr)
+
+  This software is free software; you can redistribute it and/or modify it
+  under the terms of the GNU General Public License as published
+  by the Free Software Foundation; either version 2 of the License,
+  or (at your option) any later version.
+
+  This software is distributed in the hope that it will be useful, but
+  WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program; if not, write to the Free Software
+  Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+  MA  02111-1307  USA
+
+************************************************************************/
 
 // Make sure no one attempts to run this script "directly"
 if (!defined('PUN'))
@@ -15,332 +29,292 @@ if (!defined('PUN'))
 
 // Tell admin_loader.php that this is indeed a plugin and that it is loaded
 define('PUN_PLUGIN_LOADED', 1);
-define('PLUGIN_VERSION',1.4);
+define('PLUGIN_VERSION', '1.5.0');
 
-if (!defined('FORUM_CACHE_FUNCTIONS_LOADED'))
-	require PUN_ROOT.'include/cache.php';
+// Load the language file
+if (file_exists(PUN_ROOT.'lang/'.$admin_language.'/user_management.php'))
+	require PUN_ROOT.'lang/'.$admin_language.'/user_management.php';
+else
+	require PUN_ROOT.'lang/English/user_management.php';
+	
+// Load the register.php language file
+require PUN_ROOT.'lang/'.$pun_user['language'].'/register.php';
+
+// Load the register.php/profile.php language file
+require PUN_ROOT.'lang/'.$pun_user['language'].'/prof_reg.php';
 
 if (isset($_POST['prune']))
 {
 	// Make sure something something was entered
-	if ((trim($_POST['days']) == '') || trim($_POST['posts']) == '')
+	$days = pun_trim($_POST['days']);
+	if ($days == '' || preg_match('/[^0-9]/', $days))
+		message($lang_user_management['Days must be integer message']);
+		
+	$posts = pun_trim($_POST['posts']);
+	if ($posts == '' || preg_match('/[^0-9]/', $posts))
+		message($lang_user_management['Posts must be integer message']);
+		
+	if ($_POST['admods_delete'] == '1') 
+		$admod_delete = ' AND group_id>'.PUN_UNVERIFIED;
+	else
 	{
-		// Display the admin navigation menu
-		generate_admin_menu($plugin);
-		message('You need to set all settings!');
-	}
-	if ($_POST['admods_delete']) {
-		$admod_delete = 'group_id > 0';
-	}
-	else {
-		$admod_delete = 'group_id > 3';
+		$result = $db->query('SELECT g_id FROM '.$db->prefix.'groups WHERE g_moderator=1') or error('Unable to fetch user group list', __FILE__, __LINE__, $db->error());
+		$group_ids = array();
+		$group_ids[] = PUN_ADMIN;
+		for ($i = 0;$cur_group_id = $db->result($result, $i);$i++)
+			$group_ids[] = $cur_group_id;
+		$admod_delete = ' AND group_id NOT IN('.implode(',', $group_ids).')';
 	}
 
-	if ($_POST['verified'] == 1)
+	if ($_POST['verified'] == '1')
 		$verified = '';
-	elseif ($_POST['verified'] == 0)
-		$verified = 'AND (group_id < 32000)';
+	else if ($_POST['verified'] == '0')
+		$verified = ' AND group_id>'.PUN_UNVERIFIED;
 	else
-		$verified = 'AND (group_id = 32000)';
+		$verified = ' AND group_id='.PUN_UNVERIFIED;
 
-	$prune = ($_POST['prune_by'] == 1) ? 'registered' : 'last_visit';
-
-	$user_time = time() - ($_POST['days'] * 86400);
-	$result = $db->query('SELECT id FROM '.$db->prefix.'users WHERE (num_posts < '.intval($_POST['posts']).') AND ('.$prune.' < '.intval($user_time).') AND (id > 2) AND ('.$admod_delete.')'.$verified, true) or error('Unable to fetch users to prune', __FILE__, __LINE__, $db->error());
+	$prune = ($_POST['prune_by'] == '1') ? 'registered' : 'last_visit';
+	$user_time = time() - ($days * 86400);
 	
-	$user_ids = array();
-	while ($id = $db->result($result))
-		$user_ids[] = $id;
-	
-	if (!empty($user_ids))
-	{
-		$db->query('DELETE FROM '.$db->prefix.'users WHERE id IN ('.implode(',', $user_ids).')') or error('Unable to delete users', __FILE__, __LINE__, $db->error());
-		$db->query('UPDATE '.$db->prefix.'posts SET poster_id=1 WHERE poster_id IN ('.implode(',', $user_ids).')') or error('Unable to mark posts as guest posts', __FILE__, __LINE__, $db->error());
-	}
-	
-	// Regenerate the users info cache
-	generate_users_info_cache();
-
-	$users_pruned = count($user_ids);
-
-// Display the admin navigation menu
-generate_admin_menu($plugin);
-	message('Pruning complete. Users pruned '.$users_pruned.'.');
+	$result = $db->query('DELETE FROM '.$db->prefix.'users WHERE id>2 AND num_posts<'.$posts.' AND '.$prune.'<'.$user_time.$admod_delete.$verified, true) or error('Unable to delete users', __FILE__, __LINE__, $db->error());
+	$users_pruned = $db->affected_rows();
+	message(sprintf($lang_user_management['Pruning complete message'], $users_pruned));
 }
-elseif (isset($_POST['add_user']))
+if (isset($_POST['add_user']))
 {
-	require PUN_ROOT.'lang/'.$pun_user['language'].'/prof_reg.php';
-	require PUN_ROOT.'lang/'.$pun_user['language'].'/register.php';
 	$username = pun_trim($_POST['username']);
-	$email1 = strtolower(trim($_POST['email']));
-	$email2 = strtolower(trim($_POST['email']));
-
+	$email = strtolower(pun_trim($_POST['email']));
+	$password2 = pun_trim($_POST['password2']);
+		
 	if ($_POST['random_pass'] == '1')
-	{
-		$password1 = random_pass(8);
-		$password2 = $password1;
-	}
+		$password = random_pass(8);
 	else
-	{
-		$password1 = trim($_POST['password']);
-		$password2 = trim($_POST['password']);
-	}
+		$password = pun_trim($_POST['password']);
+		
+	$errors = array();
 
-	// Convert multiple whitespace characters into one (to prevent people from registering with indistinguishable usernames)
-	$username = preg_replace('#\s+#s', ' ', $username);
+	if (pun_strlen($password) < 4)
+		$errors[] = $lang_prof_reg['Pass too short'];
+	else if ($_POST['random_pass'] != '1' && $password != $password2)
+		$errors[] = $lang_prof_reg['Pass not match'];
 
-	// Validate username and passwords
-	if (strlen($username) < 2)
-	{
-		// Display the admin navigation menu
-		generate_admin_menu($plugin);
-		message($lang_prof_reg['Username too short']);
-	}
-	else if (pun_strlen($username) > 25)	// This usually doesn't happen since the form element only accepts 25 characters
-	{
-		// Display the admin navigation menu
-		generate_admin_menu($plugin);
-		message($lang_common['Bad request']);
-		}
-	else if (strlen($password1) < 4)
-	{
-		// Display the admin navigation menu
-		generate_admin_menu($plugin);
-		message($lang_prof_reg['Pass too short']);
-	}
-	else if ($password1 != $password2)
-	{
-		// Display the admin navigation menu
-		generate_admin_menu($plugin);
-		message($lang_prof_reg['Pass not match']);
-	}
-	else if (!strcasecmp($username, 'Guest') || !strcasecmp($username, $lang_common['Guest']))
-	{
-		// Display the admin navigation menu
-		generate_admin_menu($plugin);
-		message($lang_prof_reg['Username guest']);
-	}
-	else if (preg_match('/[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}/', $username))
-	{
-		// Display the admin navigation menu
-		generate_admin_menu($plugin);
-		message($lang_prof_reg['Username IP']);
-	}
-	else if ((strpos($username, '[') !== false || strpos($username, ']') !== false) && strpos($username, '\'') !== false && strpos($username, '"') !== false)
-		message($lang_prof_reg['Username reserved chars']);
-	else if (preg_match('#\[b\]|\[/b\]|\[u\]|\[/u\]|\[i\]|\[/i\]|\[color|\[/color\]|\[quote\]|\[quote=|\[/quote\]|\[code\]|\[/code\]|\[img\]|\[/img\]|\[url|\[/url\]|\[email|\[/email\]#i', $username))
-	{
-		// Display the admin navigation menu
-		generate_admin_menu($plugin);
-		message($lang_prof_reg['Username BBCode']);
-	}
-
-	// Check username for any censored words
-	if ($pun_config['o_censoring'] == '1')
-	{
-		// If the censored username differs from the username
-		if (censor_words($username) != $username)
-		{
-			// Display the admin navigation menu
-			generate_admin_menu($plugin);
-			message($lang_register['Username censor']);
-		}
-	}
-
-	// Check that the username (or a too similar username) is not already registered
-	$result = $db->query('SELECT username FROM '.$db->prefix.'users WHERE username=\''.$db->escape($username).'\' OR username=\''.$db->escape(preg_replace('/[^\w]/', '', $username)).'\'') or error('Unable to fetch user info', __FILE__, __LINE__, $db->error());
-
-	if ($db->num_rows($result))
-	{
-		$busy = $db->result($result);
-		// Display the admin navigation menu
-		generate_admin_menu($plugin);
-		message($lang_register['Username dupe 1'].' '.pun_htmlspecialchars($busy).'. '.$lang_register['Username dupe 2']);
-	}
-
+	check_username($username);
 
 	// Validate e-mail
 	require PUN_ROOT.'include/email.php';
 
-	if (!is_valid_email($email1))
+	if (!is_valid_email($email))
+		$errors[] = $lang_common['Invalid email'];
+
+	// Check if it's a banned email address
+	if (is_banned_email($email))
 	{
-		// Display the admin navigation menu
-		generate_admin_menu($plugin);
-		message($lang_common['Invalid email']);
+		if ($pun_config['p_allow_banned_email'] == '0')
+			$errors[] = $lang_prof_reg['Banned email'];
 	}
 
-	// Check if someone else already has registered with that e-mail address
-	$dupe_list = array();
-
-	$result = $db->query('SELECT username FROM '.$db->prefix.'users WHERE email=\''.$email1.'\'') or error('Unable to fetch user info', __FILE__, __LINE__, $db->error());
-	if ($db->num_rows($result))
+	if ($pun_config['p_allow_dupe_email'] == '0')
 	{
-		while ($cur_dupe = $db->fetch_assoc($result))
-			$dupe_list[] = $cur_dupe['username'];
+		// Check if someone else already has registered with that email address
+		$result = $db->query('SELECT 1 FROM '.$db->prefix.'users WHERE email=\''.$db->escape($email).'\'') or error('Unable to fetch user info', __FILE__, __LINE__, $db->error());
+		if ($db->num_rows($result))
+			$errors[] = $lang_prof_reg['Dupe email'];
 	}
-
-	$timezone = '0';
-	$language = isset($_POST['language']) ? $_POST['language'] : $pun_config['o_default_lang'];
-
-	$email_setting = intval(1);
-
-	// Insert the new user into the database. We do this now to get the last inserted id for later use.
-	$now = time();
-
-	$intial_group_id = ($_POST['random_pass'] == '0') ? $pun_config['o_default_user_group'] : PUN_UNVERIFIED;
-	$password_hash = pun_hash($password1);
-
-	// Add the user
-	$db->query('INSERT INTO '.$db->prefix.'users (username, group_id, password, email, email_setting, timezone, language, style, registered, registration_ip, last_visit) VALUES(\''.$db->escape($username).'\', '.$intial_group_id.', \''.$password_hash.'\', \''.$email1.'\', '.$email_setting.', '.$timezone.' , \''.$language.'\', \''.$pun_config['o_default_style'].'\', '.$now.', \''.get_remote_address().'\', '.$now.')') or error('Unable to create user', __FILE__, __LINE__, $db->error());
-	$new_uid = $db->insert_id();
-
-	// Should we alert people on the admin mailing list that a new user has registered?
-	if ($pun_config['o_regs_report'] == '1')
+	
+	if (empty($errors))
 	{
-		$mail_subject = 'Alert - New registration';
-		$mail_message = 'User \''.$username.'\' registered in the forums at '.$pun_config['o_base_url']."\n\n".'User profile: '.$pun_config['o_base_url'].'/profile.php?id='.$new_uid."\n\n".'-- '."\n".'Forum Mailer'."\n".'(Do not reply to this message)';
+		$timezone = $pun_config['o_default_timezone'];
+		$language = $pun_config['o_default_lang'];
+		$email_setting = $pun_config['o_default_email_setting'];
 
-		pun_mail($pun_config['o_mailing_list'], $mail_subject, $mail_message);
+		// Insert the new user into the database. We do this now to get the last inserted id for later use.
+		$now = time();
+
+		$intial_group_id = ($_POST['random_pass'] == '0') ? $pun_config['o_default_user_group'] : PUN_UNVERIFIED;
+		$password_hash = pun_hash($password);
+
+		// Add the user
+		$db->query('INSERT INTO '.$db->prefix.'users (username, group_id, password, email, email_setting, timezone, dst, language, style, registered, registration_ip, last_visit) VALUES(\''.$db->escape($username).'\', '.$intial_group_id.', \''.$password_hash.'\', \''.$email.'\', '.$email_setting.', '.$timezone.', '.$pun_config['o_default_dst'].', \''.$language.'\', \''.$pun_config['o_default_style'].'\', '.$now.', \''.get_remote_address().'\', '.$now.')') or error('Unable to create user', __FILE__, __LINE__, $db->error());
+		$new_uid = $db->insert_id();
+
+		// Should we alert people on the admin mailing list that a new user has registered?
+		if ($pun_config['o_regs_report'] == '1')
+		{
+			$mail_subject = $lang_common['New user notification'];
+			$mail_message = sprintf($lang_common['New user message'], $username, get_base_url().'/')."\n";
+			$mail_message .= sprintf($lang_common['User profile'], get_base_url().'/profile.php?id='.$new_uid)."\n";
+			$mail_message .= "\n".'--'."\n".$lang_common['Email signature'];
+
+			pun_mail($pun_config['o_mailing_list'], $mail_subject, $mail_message);
+		}
+
+		// Must the user verify the registration or do we log him/her in right now?
+		if ($_POST['random_pass'] == '1')
+		{
+			// Load the "welcome" template
+			$mail_tpl = pun_trim(file_get_contents(PUN_ROOT.'lang/'.$pun_user['language'].'/mail_templates/welcome.tpl'));
+
+			// The first row contains the subject
+			$first_crlf = strpos($mail_tpl, "\n");
+			$mail_subject = pun_trim(substr($mail_tpl, 8, $first_crlf-8));
+			$mail_message = pun_trim(substr($mail_tpl, $first_crlf));
+
+			$mail_subject = str_replace('<board_title>', $pun_config['o_board_title'], $mail_subject);
+			$mail_message = str_replace('<base_url>', get_base_url().'/', $mail_message);
+			$mail_message = str_replace('<username>', $username, $mail_message);
+			$mail_message = str_replace('<password>', $password, $mail_message);
+			$mail_message = str_replace('<login_url>', get_base_url().'/login.php', $mail_message);
+			$mail_message = str_replace('<board_mailer>', $pun_config['o_board_title'].' '.$lang_common['Mailer'], $mail_message);
+
+			pun_mail($email, $mail_subject, $mail_message);
+		}
+		
+		// Regenerate the users info cache
+		if (!defined('FORUM_CACHE_FUNCTIONS_LOADED'))
+			require PUN_ROOT.'include/cache.php';
+
+		generate_users_info_cache();
+			
+		message($lang_user_management['User created message']);
 	}
-
-	// Must the user verify the registration or do we log him/her in right now?
-	if ($_POST['random_pass'] == '1')
-	{
-		// Load the "welcome" template
-		$mail_tpl = trim(file_get_contents(PUN_ROOT.'lang/'.$pun_user['language'].'/mail_templates/welcome.tpl'));
-
-		// The first row contains the subject
-		$first_crlf = strpos($mail_tpl, "\n");
-		$mail_subject = trim(substr($mail_tpl, 8, $first_crlf-8));
-		$mail_message = trim(substr($mail_tpl, $first_crlf));
-		$mail_subject = str_replace('<board_title>', $pun_config['o_board_title'], $mail_subject);
-		$mail_message = str_replace('<base_url>', $pun_config['o_base_url'].'/', $mail_message);
-		$mail_message = str_replace('<username>', $username, $mail_message);
-		$mail_message = str_replace('<password>', $password1, $mail_message);
-		$mail_message = str_replace('<login_url>', $pun_config['o_base_url'].'/login.php', $mail_message);
-		$mail_message = str_replace('<board_mailer>', $pun_config['o_board_title'], $mail_message);
-		pun_mail($email1, $mail_subject, $mail_message);
-	}
-
-	// Regenerate the users info cache
-	generate_users_info_cache();
-
-	// Display the admin navigation menu
-	generate_admin_menu($plugin);
-	message('User Created');
+	else
+		$error_reg = 1;
 }
-else
-{
 	// Display the admin navigation menu
 	generate_admin_menu($plugin);
 
 ?>
-	<div id="exampleplugin" class="plugin blockform">
-		<h2><span>User management - v<?php echo PLUGIN_VERSION ?></span></h2>
+	<div class="plugin blockform">
+		<h2><span><?php echo $lang_user_management['User management - v'] ?><?php echo PLUGIN_VERSION ?></span></h2>
 		<div class="box">
 			<div class="inbox">
-				<p>This Plugin allows you to prune users a certain number of days old with less than a certain number of posts.</p>
-				<p><strong>Warning: This has a permanent and instant effect. Use with extreme caution! It is recomended you make a backup before using this feature.</strong></p>
-				<p>It also allows you to manually add users, this is useful for closed forum e.g. if you have disabled user registration in options.</p>
+				<p><?php echo $lang_user_management['Plugin prune info'] ?></p>
+				<p><strong><?php echo $lang_user_management['Plugin warning'] ?></strong></p>
+				<p><?php echo $lang_user_management['Plugin add info'] ?></p>
 			</div>
 		</div>
 	</div>
 	<div class="blockform">
-		<h2 class="block2"><span>User Prune</span></h2>
+		<h2 class="block2"><span><?php echo $lang_user_management['User prune head'] ?></span></h2>
 		<div class="box">
-			<form id="example" method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>">
+			<form id="example" method="post" action="">
 				<div class="inform">
 					<fieldset>
-						<legend>Settings</legend>
+						<legend><?php echo $lang_user_management['Settings subhead'] ?></legend>
 						<div class="infldset">
 						<table class="aligntop" cellspacing="0">
 						<!--Thanks to wiseage for this function -->
 							<tr>
-								<th scope="row">Prune by</th>
+								<th scope="row"><?php echo $lang_user_management['Prune by label'] ?></th>
 								<td>
-									<input type="radio" name="prune_by" value="1" checked="checked" />&nbsp;<strong>Registed date</strong>&nbsp;&nbsp;&nbsp;<input type="radio" name="prune_by" value="0" />&nbsp;<strong>Last Login</strong>
-									<span>This decides if the minimum number of days is calculated since the last login or the registered date.</span>
+									<input type="radio" name="prune_by" value="1" checked="checked" />&#160;<strong><?php echo $lang_user_management['Registered date'] ?></strong>&#160;&#160;&#160;<input type="radio" name="prune_by" value="0" />&#160;<strong><?php echo $lang_user_management['Last login'] ?></strong>
+									<span><?php echo $lang_user_management['Prune help'] ?></span>
 								</td>
 							</tr>
 						<!--/Thanks to wiseage for this function -->
 							<tr>
-								<th scope="row">Minimum days since registration/last login</th>
+								<th scope="row"><?php echo $lang_user_management['Minimum days label'] ?></th>
 								<td>
-									<input type="text" name="days" value="28" size="25" tabindex="1" />
-									<span>The minimum number of days before users are pruned by the setting specified above.</span>
+									<input type="text" name="days" value="28" size="3" tabindex="1" />
+									<span><?php echo $lang_user_management['Minimum days help'] ?></span>
 								</td>
 							</tr>
 							<tr>
-								<th scope="row">Maximum number of posts</th>
+								<th scope="row"><?php echo $lang_user_management['Maximum posts label'] ?></th>
 								<td>
-									<input type="text" name="posts" value="1"  size="25" tabindex="1" />
-									<span>Users with more posts than this won't be pruned. e.g. a value of 1 will remove users with no posts.</span>
+									<input type="text" name="posts" value="1"  size="7" tabindex="2" />
+									<span><?php echo $lang_user_management['Maximum posts help'] ?></span>
 								</td>
 							</tr>
 							<tr>
-								<th scope="row">Delete admins and mods?</th>
+								<th scope="row"><?php echo $lang_user_management['Delete admins and mods label'] ?></th>
 								<td>
-									<input type="radio" name="admods_delete" value="1" />&nbsp;<strong>Yes</strong>&nbsp;&nbsp;&nbsp;<input type="radio" name="admods_delete" value="0" checked="checked" />&nbsp;<strong>No</strong>
-									<span>If Yes, any affected Moderators and Admins will also be pruned.</span>
+									<input type="radio" name="admods_delete" value="1" />&#160;<strong><?php echo $lang_admin_common['Yes'] ?></strong>&#160;&#160;&#160;<input type="radio" name="admods_delete" value="0" checked="checked" />&#160;<strong><?php echo $lang_admin_common['No'] ?></strong>
+									<span><?php echo $lang_user_management['Delete admins and mods help'] ?></span>
 								</td>
 							</tr>
 							<tr>
-								<th scope="row">User status</th>
+								<th scope="row"><?php echo $lang_user_management['User status label'] ?></th>
 								<td>
-									<input type="radio" name="verified" value="1" />&nbsp;<strong>Delete any</strong>&nbsp;&nbsp;&nbsp;<input type="radio" name="verified" value="0" checked="checked" />&nbsp;<strong>Delete only verified</strong>&nbsp;&nbsp;&nbsp;<input type="radio" name="verified" value="2" />&nbsp;<strong>Delete only unverified</strong>
-									<span>Decides if (un)verified users should be deleted.</span>
+									<input type="radio" name="verified" value="1" />&#160;<strong><?php echo $lang_user_management['Delete any'] ?></strong>&#160;&#160;&#160;<input type="radio" name="verified" value="0" checked="checked" />&#160;<strong><?php echo $lang_user_management['Delete only verified'] ?></strong>&#160;&#160;&#160;<input type="radio" name="verified" value="2" />&#160;<strong><?php echo $lang_user_management['Delete only unverified'] ?></strong>
+									<span><?php echo $lang_user_management['User status help'] ?></span>
 								</td>
 							</tr>
 						</table>
 						</div>
 					</fieldset>
 				</div>
-			<p class="submittop"><input type="submit" name="prune" value="Go!" tabindex="2" /></p>
+			<p class="submitend"><input type="submit" name="prune" value="<?php echo $lang_admin_common['Prune'] ?>" tabindex="3" /></p>
 			</form>
 		</div>
+		<h2 class="block2"><span><?php echo $lang_user_management['Add user head'] ?></span></h2>
+		<?php
+		if (isset($error_reg))
+		{
+			?>
+			<div id="posterror" style="border-style:none">
+				<div class="box">
+					<legend><?php echo $lang_register['Registration errors'] ?></legend>
+					<div class="inbox error-info infldset">
+						<p><?php echo $lang_register['Registration errors info'] ?></p>
+							<ul class="error-list">
+							<?php
+								foreach ($errors as $cur_error)
+									echo "\t\t\t\t".'<li><strong>'.$cur_error.'</strong></li>'."\n";
+							?>
+							</ul>
+					</div>
+				</div>
+			</div>
 
-		<h2 class="block2"><span>Add user</span></h2>
+			<?php
+		}
+		?>
 		<div class="box">
-			<form id="example" method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>">
+			<form id="example" method="post" action="">
 				<div class="inform">
 					<fieldset>
-						<legend>Settings</legend>
+						<legend><?php echo $lang_user_management['Settings subhead'] ?></legend>
 						<div class="infldset">
 						<table class="aligntop" cellspacing="0">
 							<tr>
-								<th scope="row">Username</th>
+								<th scope="row"><?php echo $lang_common['Username'] ?></th>
 								<td>
-									<input type="text" name="username" size="25" tabindex="3" />
+									<input type="text" name="username" value="<?php if (isset($_POST['username'])) echo pun_htmlspecialchars($_POST['username']); ?>" size="25" tabindex="4" />
 								</td>
 							</tr>
 							<tr>
-								<th scope="row">Email</th>
+								<th scope="row"><?php echo $lang_common['Email'] ?></th>
 								<td>
-									<input type="text" name="email" size="50" tabindex="3" />
+									<input type="text" name="email" value="<?php if (isset($_POST['email'])) echo pun_htmlspecialchars($_POST['email']); ?>" size="50" tabindex="5" />
 								</td>
 							</tr>
 							<tr>
-								<th scope="row">Generate random password?</th>
+								<th scope="row"><?php echo $lang_user_management['Generate random password label'] ?></th>
 								<td>
-									<input type="radio" name="random_pass" value="1" />&nbsp;<strong>Yes</strong>&nbsp;&nbsp;&nbsp;<input type="radio" name="random_pass" value="0" checked="checked" />&nbsp;<strong>No</strong>
-									<span>If Yes a random password will be generated and emailed to the above address.</span>
+									<input type="radio" name="random_pass" value="1" />&#160;<strong><?php echo $lang_admin_common['Yes'] ?></strong>&#160;&#160;&#160;<input type="radio" name="random_pass" value="0" checked="checked" />&#160;<strong><?php echo $lang_admin_common['No'] ?></strong>
+									<span><?php echo $lang_user_management['Generate random password help'] ?></span>
 								</td>
 							</tr>
 							<tr>
-								<th scope="row">Password</th>
+								<th scope="row"><?php echo $lang_common['Password'] ?></th>
 								<td>
-									<input type="text" name="password" size="25" tabindex="3" />
-									<span>If you don't want a random password.</span>
+									<input type="password" name="password" value="<?php if (isset($_POST['password'])) echo pun_htmlspecialchars($_POST['password']); ?>" size="25" tabindex="6" />
+									<span><?php echo $lang_user_management['Password help'] ?></span>
+								</td>
+							</tr>
+							<tr>
+								<th scope="row"><?php echo $lang_prof_reg['Confirm pass'] ?></th>
+								<td>
+									<input type="password" name="password2" value="<?php if (isset($_POST['password2'])) echo pun_htmlspecialchars($_POST['password2']); ?>" size="25" tabindex="6" />
+									<span><?php echo $lang_register['Pass info'] ?></span>
 								</td>
 							</tr>
 						</table>
 						</div>
 					</fieldset>
 				</div>
-				<p class="submittop"><input type="submit" name="add_user" value="Go!" tabindex="4" /></p>
+				<p class="submitend"><input type="submit" name="add_user" value="<?php echo $lang_admin_common['Add'] ?>" tabindex="7" /></p>
 			</form>
 		</div>
 	</div>
-
-<?php
-}
