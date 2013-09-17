@@ -71,6 +71,29 @@ else if (isset($_POST['regen_ban_cache']))
 
 }
 
+/ If the "Clear feed cache" button was clicked
+else if (isset($_POST['clear_feed_cache']))
+{
+	// We re-generate it
+	clear_feed_cache();
+
+	// Display the admin navigation menu
+	generate_admin_menu($plugin);
+
+?>
+	<div id="exampleplugin" class="plugin blockform">
+		<h2><span>Clear your cache</span></h2>
+		<div class="box">
+			<div class="inbox">
+				<p>Feed cache Cleared!</p>
+				<p><a href="javascript: history.go(-1)">Go back</a></p>
+			</div>
+		</div>
+	</div>
+<?php
+
+}
+
 // If the "Regenerate ranks cache" button was clicked
 else if (isset($_POST['regen_ranks_cache']))
 {
@@ -168,6 +191,7 @@ if (version_compare(FORUM_VERSION, '1.5', '<'))
 ?>
 					<p><input type="submit" name="regen_config_cache" value="Regenerate config cache" tabindex="5" /></p>
 					<p><input type="submit" name="regen_jump_cache" value="Regenerate quickjump cache" tabindex="6" /></p>
+					<p><input type="submit" name="clear_feed_cache" value="Clear Feed cache" tabindex="7" /></p>
 				</form>
 
 			</div>
