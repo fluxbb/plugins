@@ -85,7 +85,7 @@ else if (isset($_POST['clear_feed_cache']))
 		<h2><span>Clear your cache</span></h2>
 		<div class="box">
 			<div class="inbox">
-				<p>Feed cache Cleared!</p>
+				<p>Feed cache cleared!</p>
 				<p><a href="javascript: history.go(-1)">Go back</a></p>
 			</div>
 		</div>
@@ -191,7 +191,7 @@ if (version_compare(FORUM_VERSION, '1.5', '<'))
 ?>
 					<p><input type="submit" name="regen_config_cache" value="Regenerate config cache" tabindex="5" /></p>
 					<p><input type="submit" name="regen_jump_cache" value="Regenerate quickjump cache" tabindex="6" /></p>
-					<p><input type="submit" name="clear_feed_cache" value="Clear Feed cache" tabindex="7" /></p>
+					<p><input type="submit" name="clear_feed_cache" value="Clear feed cache" tabindex="7" /></p>
 				</form>
 
 			</div>
