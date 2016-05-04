@@ -200,13 +200,11 @@ else
 							<p class="submittop">
                 <input type="submit" name="confirm" value="Continue to Confirmation" tabindex="3" />
               </div>
-						</div>
-					</fieldset>
-				</div>
-			</form>
+						</fieldset>
+					</div>
+				</form>
+			</div>
 		</div>
-	</div>
-	</div>
 <?php
 
 }
