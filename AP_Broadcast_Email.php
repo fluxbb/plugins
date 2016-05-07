@@ -172,10 +172,10 @@ else
 				<p>There will be a confirmation page after this one - to make sure you have not made any mistakes.</p>
 			</div>
 		</div>
-		</div>
+	</div>
 
   
-  <div class="blockform">
+ 	<div class="blockform">
 		<h2 class="block2"><span>Compose Message</span></h2>
 		<div class="box">
 			<form id="broadcastemail" method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>">
@@ -198,14 +198,13 @@ else
 								</tr>
 							</table>
 							<p class="submittop">
-                <input type="submit" name="confirm" value="Continue to Confirmation" tabindex="3" />
-              </div>
+								<input type="submit" name="confirm" value="Continue to Confirmation" tabindex="3" />
+							</p>
 						</div>
 					</fieldset>
 				</div>
 			</form>
 		</div>
-	</div>
 	</div>
 <?php
 
